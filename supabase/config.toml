@@ -1,0 +1,3 @@
+# Configuración mínima para la integración GitHub ↔ Supabase.
+# Al hacer push a main, Supabase aplica las migraciones de supabase/migrations.
+project_id = "Incorporacion-tecnologias"
