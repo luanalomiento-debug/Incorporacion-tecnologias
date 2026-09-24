@@ -6,7 +6,10 @@ export default async function LayoutReclutador({ children }: LayoutProps<"/reclu
 
   return (
     <>
-      <Encabezado perfil={perfil} enlaces={[{ href: "/reclutador", texto: "Panel" }]} />
+      <Encabezado perfil={perfil} enlaces={[
+          { href: "/reclutador", texto: "Panel" },
+          { href: "/reclutador/vacantes/nueva", texto: "Nueva vacante" },
+        ]} />
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6">{children}</main>
     </>
   );
