@@ -6,7 +6,10 @@ export default async function LayoutPostulante({ children }: LayoutProps<"/postu
 
   return (
     <>
-      <Encabezado perfil={perfil} enlaces={[{ href: "/postulante", texto: "Vacantes" }]} />
+      <Encabezado perfil={perfil} enlaces={[
+          { href: "/postulante", texto: "Vacantes" },
+          { href: "/postulante/mi-cv", texto: "Mi CV" },
+        ]} />
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6">{children}</main>
     </>
   );
