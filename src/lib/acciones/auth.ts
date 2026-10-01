@@ -36,7 +36,10 @@ export async function iniciarSesion(
 
   const supabase = await crearClienteServidor();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) return { error: traducirError(error.message) };
+  if (error) {
+    console.error("Error de login:", error.message);
+    return { error: traducirError(error.message) };
+  }
 
   redirect("/");
 }
@@ -63,7 +66,10 @@ export async function registrarse(
     password,
     options: { data: { nombre, apellido } },
   });
-  if (error) return { error: traducirError(error.message) };
+  if (error) {
+    console.error("Error de registro:", error.message);
+    return { error: traducirError(error.message) };
+  }
 
   // Si en Supabase está activada la confirmación por email, no hay sesión todavía.
   if (!data.session) {
