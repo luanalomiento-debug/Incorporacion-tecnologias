@@ -15,3 +15,30 @@ body {
   --color-acento: #16a34a;
   --color-acento-oscuro: #15803d;
 }
+
+/* Carrusel de testimonios: se mueve solo y se frena al pasar el mouse. */
+@keyframes deslizar {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.carrusel-pista {
+  display: flex;
+  width: max-content;
+  animation: deslizar 70s linear infinite;
+}
+
+.carrusel:hover .carrusel-pista {
+  animation-play-state: paused;
+}
+
+/* Si la persona pidió "reducir movimiento", no se anima y se desliza a mano. */
+@media (prefers-reduced-motion: reduce) {
+  .carrusel {
+    overflow-x: auto;
+  }
+  .carrusel-pista {
+    animation: none;
+  }
+}
