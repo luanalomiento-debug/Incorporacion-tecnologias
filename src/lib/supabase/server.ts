@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { claveSupabase, urlSupabase } from "@/lib/supabase/config";
 
 // Cliente de Supabase para el servidor (páginas, layouts y server actions).
 // Se crea uno nuevo en cada pedido.
@@ -7,8 +8,8 @@ export async function crearClienteServidor() {
   const cookieStore = await cookies();
 
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    urlSupabase(),
+    claveSupabase(),
     {
       cookies: {
         getAll() {

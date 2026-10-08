@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { postularse } from "@/lib/acciones/postulaciones";
 import { estilos } from "@/components/estilos";
+import { estilosPostulante } from "@/components/postulante/estilos";
 
 export function BotonPostularse({ vacanteId }: { vacanteId: string }) {
   const router = useRouter();
@@ -25,7 +26,7 @@ export function BotonPostularse({ vacanteId }: { vacanteId: string }) {
   return (
     <div className="space-y-3">
       {error && <p className={estilos.error}>{error}</p>}
-      <button type="button" onClick={enviar} disabled={enviando} className={`${estilos.boton} w-full sm:w-auto`}>
+      <button type="button" onClick={enviar} disabled={enviando} className={`${estilosPostulante.boton} w-full`}>
         {enviando ? "Enviando…" : "Postularme con mi CV"}
       </button>
     </div>
