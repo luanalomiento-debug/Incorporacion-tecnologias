@@ -80,6 +80,9 @@ export default async function PanelReclutadorPage() {
                   <Link href={`/reclutador/vacantes/${v.id}/postulaciones`} className={`${estilosReclutador.botonSecundario} !px-4 !py-2 text-sm`}>
                     Ver postulaciones
                   </Link>
+                  <Link href={`/reclutador/vacantes/${v.id}/editar`} className={`${estilosReclutador.botonSecundario} !px-4 !py-2 text-sm`}>
+                    Editar
+                  </Link>
                 </div>
               </li>
             );

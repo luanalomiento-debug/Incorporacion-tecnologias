@@ -53,3 +53,36 @@ export async function cambiarEstadoVacante(formData: FormData) {
   revalidatePath("/reclutador");
   revalidatePath(`/reclutador/vacantes/${id}`);
 }
+
+// Corrige el texto de una vacante ya creada. Solo un reclutador puede hacerlo
+// (lo garantizan los permisos de la base de datos).
+export async function editarVacante(
+  id: string,
+  _previo: EstadoFormulario,
+  formData: FormData,
+): Promise<EstadoFormulario> {
+  await exigirRol("reclutador");
+
+  const cambios = {
+    titulo: texto(formData, "titulo"),
+    descripcion: texto(formData, "descripcion"),
+    requisitos: texto(formData, "requisitos"),
+    habilidades: texto(formData, "habilidades"),
+    informacion_adicional: texto(formData, "informacion_adicional"),
+  };
+
+  if (!cambios.titulo || !cambios.descripcion || !cambios.requisitos || !cambios.habilidades)
+    return { error: "Completá el nombre del puesto, la descripción, los requisitos y las habilidades." };
+
+  const supabase = await crearClienteServidor();
+  const { data, error } = await supabase.from("vacantes").update(cambios).eq("id", id).select("id");
+
+  if (error || !data || data.length === 0)
+    return { error: "No se pudieron guardar los cambios. Intentá de nuevo." };
+
+  revalidatePath("/reclutador");
+  revalidatePath(`/reclutador/vacantes/${id}`);
+  revalidatePath("/postulante");
+  revalidatePath(`/postulante/vacantes/${id}`);
+  redirect(`/reclutador/vacantes/${id}`);
+}

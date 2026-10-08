@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { cerrarSesion } from "@/lib/acciones/auth";
 import type { Perfil } from "@/lib/auth";
 import { LogoEmpresa } from "@/components/LogoEmpresa";
@@ -12,7 +13,11 @@ export function EncabezadoReclutador({ perfil }: { perfil: Perfil }) {
         <div className="flex items-center justify-between gap-3 py-3">
           <LogoEmpresa />
           <div className="flex items-center gap-2 sm:gap-3">
-            <div className="flex items-center gap-2">
+            <Link
+              href="/reclutador/perfil"
+              aria-label="Ver mi perfil"
+              className="flex items-center gap-2 rounded-full py-1 pl-1 pr-1 transition hover:bg-blue-50 sm:pr-3"
+            >
               <span
                 aria-hidden
                 className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-acento text-sm font-bold text-white"
@@ -25,7 +30,7 @@ export function EncabezadoReclutador({ perfil }: { perfil: Perfil }) {
                 </p>
                 <p className="text-xs text-slate-500">Reclutador/a</p>
               </div>
-            </div>
+            </Link>
             <form action={cerrarSesion}>
               <button
                 type="submit"
