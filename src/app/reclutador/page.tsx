@@ -13,6 +13,12 @@ export default async function PanelReclutadorPage() {
     .order("creado_en", { ascending: false });
   const vacantes = (data ?? []) as Vacante[];
 
+  const { data: postulaciones } = await supabase.from("postulaciones").select("vacante_id");
+  const cantidades = new Map<string, number>();
+  for (const p of postulaciones ?? []) {
+    cantidades.set(p.vacante_id, (cantidades.get(p.vacante_id) ?? 0) + 1);
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -40,7 +46,9 @@ export default async function PanelReclutadorPage() {
                   </Link>
                   <EtiquetaEstado activa={v.activa} />
                 </div>
-                <p className="mt-1 text-sm text-slate-500">Creada el {formatearFecha(v.creado_en)}</p>
+                <p className="mt-1 text-sm text-slate-500">
+                  Creada el {formatearFecha(v.creado_en)} · {cantidades.get(v.id) ?? 0} postulante(s)
+                </p>
               </div>
               <div className="flex gap-2">
                 <Link href={`/reclutador/vacantes/${v.id}`} className={estilos.botonSecundario}>

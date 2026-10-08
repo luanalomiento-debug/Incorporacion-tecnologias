@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { exigirRol } from "@/lib/auth";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { COLUMNAS_VACANTE, formatearFecha, type Vacante } from "@/lib/tipos";
 import { DetalleVacante } from "@/components/DetalleVacante";
+import { BotonPostularse } from "@/components/BotonPostularse";
 import { estilos } from "@/components/estilos";
 
 export default async function VacantePostulantePage({
@@ -19,6 +21,17 @@ export default async function VacantePostulantePage({
 
   if (!vacante) notFound();
 
+  const perfil = await exigirRol("postulante");
+  const [{ data: postulacion }, { data: cv }] = await Promise.all([
+    supabase
+      .from("postulaciones")
+      .select("id")
+      .eq("vacante_id", vacante.id)
+      .eq("postulante_id", perfil.id)
+      .maybeSingle(),
+    supabase.from("cvs").select("id").eq("postulante_id", perfil.id).maybeSingle(),
+  ]);
+
   return (
     <div className="space-y-6">
       <Link href="/postulante" className="text-sm text-indigo-600 hover:underline">
@@ -32,6 +45,21 @@ export default async function VacantePostulantePage({
         </div>
         <DetalleVacante vacante={vacante} />
       </article>
+
+      <section className={`${estilos.tarjeta} space-y-3`}>
+        {postulacion ? (
+          <p className={estilos.exito}>✓ Ya te postulaste a esta vacante.</p>
+        ) : cv ? (
+          <BotonPostularse vacanteId={vacante.id} />
+        ) : (
+          <p className="text-slate-700">
+            Para postularte primero necesitás subir tu CV.{" "}
+            <Link href="/postulante/mi-cv" className="font-semibold text-indigo-600 hover:underline">
+              Ir a Mi CV
+            </Link>
+          </p>
+        )}
+      </section>
     </div>
   );
 }
