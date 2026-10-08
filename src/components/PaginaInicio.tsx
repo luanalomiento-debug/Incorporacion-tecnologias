@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { EMPRESA } from "@/lib/empresa";
+import { CarruselTestimonios } from "@/components/CarruselTestimonios";
 
 const PASOS = [
   { titulo: "Creá tu cuenta", detalle: "Solo con tu email y una contraseña." },
@@ -80,6 +81,8 @@ export function PaginaInicio() {
           </div>
         </section>
       </main>
+
+      <CarruselTestimonios />
     </div>
   );
 }
