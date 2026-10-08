@@ -26,6 +26,6 @@ export async function registrarCv(nombreArchivo: string): Promise<{ error?: stri
   );
   if (error) return { error: "No se pudo guardar tu CV. Intentá de nuevo." };
 
-  revalidatePath("/postulante/mi-cv");
+  revalidatePath("/postulante/perfil");
   return {};
 }

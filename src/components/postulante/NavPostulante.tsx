@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 const ENLACES = [
   { href: "/postulante", texto: "Vacantes", activo: (r: string) => r === "/postulante" || r.startsWith("/postulante/vacantes") },
   { href: "/postulante/mis-postulaciones", texto: "Mis postulaciones", activo: (r: string) => r.startsWith("/postulante/mis-postulaciones") },
-  { href: "/postulante/mi-cv", texto: "Mi CV", activo: (r: string) => r.startsWith("/postulante/mi-cv") },
 ];
 
 // Menú con la sección actual resaltada.

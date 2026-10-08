@@ -134,7 +134,7 @@ Las cuentas de reclutador se crean a mano. Hay dos formas; la más simple es con
 src/
   app/
     login, registro            Acceso
-    postulante/                Vistas del postulante (vacantes, Mi CV, Mis postulaciones)
+    postulante/                Vistas del postulante (vacantes, Mis postulaciones, Perfil con su CV)
     reclutador/                Panel del reclutador (vacantes y postulantes)
     cv/[postulanteId]/         Abre un CV con enlace firmado de 60 segundos
   components/                  Piezas reutilizables de la interfaz

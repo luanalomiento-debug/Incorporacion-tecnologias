@@ -41,7 +41,7 @@ export default async function VacantesPostulantePage() {
               </span>
             ) : (
               <Link
-                href="/postulante/mi-cv"
+                href="/postulante/perfil#cv"
                 className="inline-flex items-center gap-2 rounded-xl bg-acento px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-acento-oscuro"
               >
                 <Icono nombre="subir" className="h-4 w-4" /> Subí tu CV para poder postularte
