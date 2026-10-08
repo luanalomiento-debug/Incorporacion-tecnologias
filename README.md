@@ -18,7 +18,8 @@ Hay dos tipos de usuario (roles):
   - Ve sus postulaciones en "Mis postulaciones".
 - **Reclutador**
   - Crea vacantes (puesto, descripción, requisitos, habilidades, información relevante) y las activa o desactiva. Las vacantes no se borran.
-  - Ve cuántos postulantes tiene cada vacante, quiénes son y abre el CV de cada uno.
+  - Tiene un **Dashboard** aparte, con dos vistas separadas: **Postulaciones** (los puestos a los que ya se postularon personas, con sus postulantes y el acceso al CV de cada uno) y **Recomendaciones de IA** (puestos y candidatos sugeridos).
+  - Desde cada vacante puede ver el dashboard con solo las postulaciones de ese puesto, y desde el dashboard puede volver al detalle de cada puesto.
   - Los campos de inteligencia artificial (afinidad, análisis, vacante sugerida) aparecen como "Pendiente de análisis". El análisis con IA **no está implementado en esta etapa**; solo quedó preparada la base de datos.
 
 **Cómo se define el rol:** el registro público crea **siempre** cuentas de postulante. Las cuentas de reclutador se crean a mano desde el panel de Supabase (ver sección 4). Nadie puede elegir ser reclutador desde la app.
@@ -135,7 +136,7 @@ src/
   app/
     login, registro            Acceso
     postulante/                Vistas del postulante (vacantes, Mis postulaciones, Perfil con su CV)
-    reclutador/                Panel del reclutador (vacantes y postulantes)
+    reclutador/                Vista del reclutador (vacantes, detalle, dashboard de postulaciones y de IA)
     cv/[postulanteId]/         Abre un CV con enlace firmado de 60 segundos
   components/                  Piezas reutilizables de la interfaz
   lib/

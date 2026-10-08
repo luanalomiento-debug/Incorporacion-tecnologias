@@ -5,6 +5,9 @@ import { useActionState } from "react";
 import { crearVacante } from "@/lib/acciones/vacantes";
 import type { EstadoFormulario } from "@/lib/acciones/auth";
 import { estilos } from "@/components/estilos";
+import { estilosAcceso } from "@/components/estilos";
+import { Icono } from "@/components/postulante/Icono";
+import { estilosReclutador } from "@/components/reclutador/estilos";
 
 const CAMPOS = [
   { nombre: "descripcion", etiqueta: "Descripción", ayuda: "¿De qué se trata el puesto?", requerido: true },
@@ -22,31 +25,32 @@ export default function NuevaVacantePage() {
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div>
-        <Link href="/reclutador" className="text-sm text-indigo-600 hover:underline">
-          ← Volver al panel
+        <Link href="/reclutador" className="inline-flex items-center gap-1 text-sm font-semibold text-blue-700 hover:underline">
+          <Icono nombre="flecha" className="h-4 w-4 rotate-180" /> Volver a las vacantes
         </Link>
-        <h1 className={`${estilos.titulo} mt-2`}>Nueva vacante</h1>
+        <h1 className={`${estilosReclutador.titulo} mt-3`}>Nueva vacante</h1>
+        <p className="mt-1 text-slate-600">Completá los datos del puesto. Los postulantes van a ver esta información.</p>
       </div>
 
-      <form action={accion} className={`${estilos.tarjeta} space-y-5`}>
+      <form action={accion} className={`${estilosReclutador.tarjeta} space-y-5`}>
         <div>
           <label htmlFor="titulo" className={estilos.etiqueta}>Nombre del puesto</label>
-          <input id="titulo" name="titulo" required className={estilos.input} placeholder="Ej.: Analista de Marketing Digital" />
+          <input id="titulo" name="titulo" required className={estilosAcceso.input} placeholder="Ej.: Analista de Marketing Digital" />
         </div>
 
         {CAMPOS.map((c) => (
           <div key={c.nombre}>
             <label htmlFor={c.nombre} className={estilos.etiqueta}>{c.etiqueta}</label>
-            <textarea id={c.nombre} name={c.nombre} rows={4} required={c.requerido} className={estilos.input} />
+            <textarea id={c.nombre} name={c.nombre} rows={4} required={c.requerido} className={estilosAcceso.input} />
             <p className="mt-1 text-xs text-slate-500">{c.ayuda}</p>
           </div>
         ))}
 
-        <p className="text-sm text-slate-600">La vacante se publica como <strong>activa</strong>. Podés desactivarla cuando quieras.</p>
+        <p className="rounded-xl bg-blue-50 px-4 py-3 text-sm text-blue-900">La vacante se publica como <strong>activa</strong>. Podés desactivarla cuando quieras.</p>
 
         {estado.error && <p className={estilos.error}>{estado.error}</p>}
 
-        <button type="submit" disabled={enviando} className={`${estilos.boton} w-full sm:w-auto`}>
+        <button type="submit" disabled={enviando} className={`${estilosReclutador.boton} w-full sm:w-auto`}>
           {enviando ? "Publicando…" : "Publicar vacante"}
         </button>
       </form>
