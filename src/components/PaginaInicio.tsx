@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { EMPRESA } from "@/lib/empresa";
+import { LogoEmpresa } from "@/components/LogoEmpresa";
 import { CarruselTestimonios } from "@/components/CarruselTestimonios";
 
 const PASOS = [
@@ -23,13 +24,8 @@ export function PaginaInicio() {
         className="pointer-events-none absolute -right-32 top-24 h-[30rem] w-[30rem] rounded-full bg-gradient-to-br from-sky-200 via-blue-400 to-blue-600 opacity-50 blur-3xl sm:h-[40rem] sm:w-[40rem]"
       />
 
-      <header className="relative mx-auto flex max-w-6xl items-center justify-between px-4 py-5">
-        <div className="flex items-center gap-2">
-          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-acento text-lg font-bold text-white">
-            {EMPRESA.charAt(0)}
-          </span>
-          <span className="text-lg font-bold text-marca">{EMPRESA}</span>
-        </div>
+      <header className="relative flex items-center justify-between px-4 py-5 sm:px-8">
+        <LogoEmpresa />
         <Link href="/login" className={`${boton} !px-5 !py-2.5`}>
           Iniciar
         </Link>
