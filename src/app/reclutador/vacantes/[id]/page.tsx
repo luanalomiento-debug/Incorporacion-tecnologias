@@ -49,6 +49,12 @@ export default async function VacanteReclutadorPage({
             >
               Ver postulaciones ({cantidad})
             </Link>
+            <Link
+              href={`/reclutador/vacantes/${vacante.id}/editar`}
+              className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-marca shadow-sm transition hover:bg-blue-50"
+            >
+              Editar
+            </Link>
             <div className="rounded-xl bg-white p-1">
               <BotonEstadoVacante id={vacante.id} activa={vacante.activa} />
             </div>
