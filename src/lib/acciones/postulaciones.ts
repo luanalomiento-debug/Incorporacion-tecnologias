@@ -16,7 +16,7 @@ export async function postularse(vacanteId: string): Promise<{ error?: string }>
     .select("id")
     .eq("postulante_id", perfil.id)
     .maybeSingle();
-  if (!cv) return { error: "Primero tenés que subir tu CV en la sección «Mi CV»." };
+  if (!cv) return { error: "Primero tenés que subir tu CV en tu perfil." };
 
   const { error } = await supabase
     .from("postulaciones")

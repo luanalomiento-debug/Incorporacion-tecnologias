@@ -84,8 +84,8 @@ export default async function VacantePostulantePage({
                   <p className="font-bold text-marca">Para postularte, primero subí tu CV</p>
                   <p className="mt-1 text-sm text-slate-600">Lo cargás una sola vez y lo usás en todas tus postulaciones.</p>
                 </div>
-                <Link href="/postulante/mi-cv" className={`${estilosPostulante.boton} w-full`}>
-                  <Icono nombre="subir" className="h-5 w-5" /> Ir a Mi CV
+                <Link href="/postulante/perfil#cv" className={`${estilosPostulante.boton} w-full`}>
+                  <Icono nombre="subir" className="h-5 w-5" /> Ir a mi perfil
                 </Link>
               </>
             )}

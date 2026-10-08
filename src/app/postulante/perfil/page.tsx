@@ -2,17 +2,10 @@ import Link from "next/link";
 import { exigirRol } from "@/lib/auth";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { formatearFecha, type Cv } from "@/lib/tipos";
+import { DatosPersonales } from "@/components/postulante/DatosPersonales";
 import { Icono } from "@/components/postulante/Icono";
+import { SubirCv } from "@/components/SubirCv";
 import { estilosPostulante } from "@/components/postulante/estilos";
-
-function Dato({ etiqueta, valor }: { etiqueta: string; valor: string }) {
-  return (
-    <div className="rounded-xl bg-slate-50 px-4 py-3">
-      <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">{etiqueta}</dt>
-      <dd className="mt-1 break-words font-semibold text-marca">{valor || "—"}</dd>
-    </div>
-  );
-}
 
 export default async function PerfilPostulantePage() {
   const perfil = await exigirRol("postulante");
@@ -54,18 +47,18 @@ export default async function PerfilPostulantePage() {
         </div>
       </header>
 
-      <section className={estilosPostulante.tarjeta}>
-        <h2 className="mb-4 font-bold text-marca">Datos personales</h2>
-        <dl className="grid gap-3 sm:grid-cols-2">
-          <Dato etiqueta="Nombre" valor={perfil.nombre} />
-          <Dato etiqueta="Apellido" valor={perfil.apellido} />
-          <Dato etiqueta="Email" valor={perfil.email} />
-          <Dato etiqueta="Miembro desde" valor={datos?.creado_en ? formatearFecha(datos.creado_en) : ""} />
-        </dl>
-      </section>
+      <DatosPersonales
+        nombre={perfil.nombre}
+        apellido={perfil.apellido}
+        email={perfil.email}
+        miembroDesde={datos?.creado_en ? formatearFecha(datos.creado_en) : ""}
+      />
 
-      <section className={estilosPostulante.tarjeta}>
-        <h2 className="mb-4 font-bold text-marca">Mi CV</h2>
+      <section id="cv" className={`${estilosPostulante.tarjeta} scroll-mt-32 space-y-5`}>
+        <div>
+          <h2 className="font-bold text-marca">Mi CV</h2>
+          <p className="mt-1 text-sm text-slate-600">Este es el CV que se envía cuando te postulás a una vacante.</p>
+        </div>
         {cv ? (
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex min-w-0 items-center gap-4">
@@ -75,25 +68,26 @@ export default async function PerfilPostulantePage() {
               <div className="min-w-0">
                 <p className="truncate font-semibold text-marca">{cv.nombre_archivo}</p>
                 <p className="text-sm text-slate-500">Subido el {formatearFecha(cv.subido_en)}</p>
+                <span className={`${estilosPostulante.etiquetaOk} mt-1`}>
+                  <Icono nombre="check" className="h-3.5 w-3.5" /> Listo para postularte
+                </span>
               </div>
             </div>
-            <div className="flex flex-wrap gap-2">
-              <a href={`/cv/${perfil.id}`} target="_blank" rel="noopener" className={estilosPostulante.botonSecundario}>
-                Ver mi CV
-              </a>
-              <Link href="/postulante/mi-cv" className={estilosPostulante.botonSecundario}>
-                Reemplazar
-              </Link>
-            </div>
+            <a href={`/cv/${perfil.id}`} target="_blank" rel="noopener" className={estilosPostulante.botonSecundario}>
+              Ver mi CV
+            </a>
           </div>
         ) : (
-          <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl bg-slate-50 p-4">
+          <div className="flex items-center gap-4 rounded-xl bg-slate-50 p-4">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white text-slate-400 shadow-sm">
+              <Icono nombre="documento" className="h-6 w-6" />
+            </span>
             <p className="text-slate-600">Todavía no subiste tu CV. Lo necesitás para postularte.</p>
-            <Link href="/postulante/mi-cv" className={estilosPostulante.boton}>
-              <Icono nombre="subir" className="h-5 w-5" /> Subir mi CV
-            </Link>
           </div>
         )}
+        <div className="border-t border-slate-100 pt-5">
+          <SubirCv postulanteId={perfil.id} tieneCv={Boolean(cv)} />
+        </div>
       </section>
 
       <section className={estilosPostulante.tarjeta}>
