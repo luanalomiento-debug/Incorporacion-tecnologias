@@ -6,6 +6,8 @@ import { crearClienteNavegador } from "@/lib/supabase/client";
 import { registrarCv } from "@/lib/acciones/cv";
 import { rutaCv, TAMANO_MAXIMO_CV } from "@/lib/tipos";
 import { estilos } from "@/components/estilos";
+import { Icono } from "@/components/postulante/Icono";
+import { estilosPostulante } from "@/components/postulante/estilos";
 
 // El PDF se sube directo del navegador a Storage (las políticas del bucket
 // solo permiten escribir en la carpeta del propio usuario) y después se
@@ -69,22 +71,23 @@ export function SubirCv({ postulanteId, tieneCv }: { postulanteId: string; tiene
 
   return (
     <form onSubmit={subir} className="space-y-4">
-      <div>
-        <label htmlFor="cv" className={estilos.etiqueta}>
-          {tieneCv ? "Subir un CV nuevo (reemplaza al actual)" : "Elegí tu CV"}
-        </label>
-        <input
-          id="cv"
-          type="file"
-          accept="application/pdf,.pdf"
-          onChange={elegir}
-          className="block w-full text-sm text-slate-700 file:mr-3 file:rounded-lg file:border-0 file:bg-indigo-50 file:px-4 file:py-2.5 file:text-sm file:font-semibold file:text-indigo-700 hover:file:bg-indigo-100"
-        />
-        <p className="mt-1 text-xs text-slate-500">Solo PDF, hasta 5 MB.</p>
-      </div>
+      <p className="font-bold text-marca">{tieneCv ? "Subir un CV nuevo (reemplaza al actual)" : "Subí tu CV"}</p>
+      <label
+        htmlFor="cv"
+        className="flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-blue-200 bg-blue-50/50 px-6 py-8 text-center transition hover:border-acento hover:bg-green-50/50 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-green-300"
+      >
+        <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-blue-600 shadow-sm">
+          <Icono nombre="subir" className="h-6 w-6" />
+        </span>
+        <span className="font-semibold text-marca">
+          {archivo ? archivo.name : "Tocá acá para elegir tu PDF"}
+        </span>
+        <span className="text-xs text-slate-500">Solo PDF, hasta 5 MB.</span>
+        <input id="cv" type="file" accept="application/pdf,.pdf" onChange={elegir} className="sr-only" />
+      </label>
       {error && <p className={estilos.error}>{error}</p>}
       {exito && <p className={estilos.exito}>{exito}</p>}
-      <button type="submit" disabled={!archivo || subiendo} className={`${estilos.boton} w-full sm:w-auto`}>
+      <button type="submit" disabled={!archivo || subiendo} className={`${estilosPostulante.boton} w-full sm:w-auto`}>
         {subiendo ? "Subiendo…" : tieneCv ? "Reemplazar CV" : "Guardar CV"}
       </button>
     </form>
