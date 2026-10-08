@@ -2,13 +2,15 @@ import { redirect } from "next/navigation";
 import { obtenerSesion, inicioDelRol } from "@/lib/auth";
 import { cerrarSesion } from "@/lib/acciones/auth";
 import { TarjetaAcceso } from "@/components/TarjetaAcceso";
+import { PaginaInicio } from "@/components/PaginaInicio";
 import { estilos } from "@/components/estilos";
 
-// Página de entrada: manda a cada usuario a la vista de su rol.
+// Página de entrada: quien no inició sesión ve la página de inicio;
+// el resto va a la vista de su rol.
 export default async function Inicio() {
   const sesion = await obtenerSesion();
 
-  if (sesion.estado === "sin-sesion") redirect("/login");
+  if (sesion.estado === "sin-sesion") return <PaginaInicio />;
   if (sesion.estado === "ok") redirect(inicioDelRol(sesion.perfil.rol));
 
   // Hay sesión pero no hay perfil (por ejemplo, un usuario creado antes de la migración).
