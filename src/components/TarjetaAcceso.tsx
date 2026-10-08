@@ -1,22 +1,12 @@
 import Link from "next/link";
 import { EMPRESA } from "@/lib/empresa";
+import { LogoEmpresa } from "@/components/LogoEmpresa";
 
 const VENTAJAS = [
   "Cargá tu CV una sola vez",
   "Postulate a las vacantes que te interesen",
   "Mirá todas tus postulaciones en un solo lugar",
 ];
-
-function Logo({ claro = false }: { claro?: boolean }) {
-  return (
-    <div className="flex items-center gap-2">
-      <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-acento text-lg font-bold text-white">
-        {EMPRESA.charAt(0)}
-      </span>
-      <span className={`text-lg font-bold ${claro ? "text-white" : "text-marca"}`}>{EMPRESA}</span>
-    </div>
-  );
-}
 
 // Pantalla de acceso (login y registro): panel de bienvenida a la izquierda
 // en computadora, y la tarjeta con el formulario a la derecha.
@@ -35,7 +25,7 @@ export function TarjetaAcceso({
         <div aria-hidden className="absolute -right-24 -top-24 h-80 w-80 rounded-full bg-sky-400/30 blur-2xl" />
         <div aria-hidden className="absolute -bottom-32 -left-16 h-96 w-96 rounded-full bg-green-400/20 blur-3xl" />
         <div className="relative">
-          <Logo claro />
+          <LogoEmpresa claro />
         </div>
         <div className="relative max-w-md">
           <h2 className="text-4xl font-bold leading-tight">Tu próximo paso profesional empieza acá</h2>
@@ -61,7 +51,7 @@ export function TarjetaAcceso({
         <div className="relative w-full max-w-md">
           <div className="mb-8 flex items-center justify-between">
             <div className="lg:invisible">
-              <Logo />
+              <LogoEmpresa />
             </div>
             <Link href="/" className="text-sm font-medium text-slate-600 hover:text-marca">
               ← Volver al inicio
