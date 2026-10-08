@@ -8,3 +8,10 @@ body {
   background: #f8fafc;
   color: #0f172a;
 }
+
+/* Colores de la página de inicio */
+@theme {
+  --color-marca: #0b1f4b;
+  --color-acento: #16a34a;
+  --color-acento-oscuro: #15803d;
+}
