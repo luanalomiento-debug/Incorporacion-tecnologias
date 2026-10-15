@@ -73,7 +73,7 @@ export function SubirCv({ postulanteId, tieneCv }: { postulanteId: string; tiene
     <form onSubmit={subir} className="space-y-4">
       <p className="font-bold text-marca">{tieneCv ? "Subir un CV nuevo (reemplaza al actual)" : "Subí tu CV"}</p>
       <label
-        htmlFor="cv"
+        htmlFor="archivo-cv"
         className="flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-blue-200 bg-blue-50/50 px-6 py-8 text-center transition hover:border-acento hover:bg-green-50/50 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-green-300"
       >
         <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-blue-600 shadow-sm">
@@ -83,8 +83,12 @@ export function SubirCv({ postulanteId, tieneCv }: { postulanteId: string; tiene
           {archivo ? archivo.name : "Tocá acá para elegir tu PDF"}
         </span>
         <span className="text-xs text-slate-500">Solo PDF, hasta 5 MB.</span>
-        <input id="cv" type="file" accept="application/pdf,.pdf" onChange={elegir} className="sr-only" />
+        <input id="archivo-cv" type="file" accept="application/pdf,.pdf" onChange={elegir} className="sr-only" />
       </label>
+      <p className="rounded-xl bg-blue-50 px-4 py-3 text-sm text-blue-900">
+        Tu CV se analiza automáticamente con inteligencia artificial para sugerirte vacantes y ayudar a la
+        reclutadora. La decisión final la toma una persona.
+      </p>
       {error && <p className={estilos.error}>{error}</p>}
       {exito && <p className={estilos.exito}>{exito}</p>}
       <button type="submit" disabled={!archivo || subiendo} className={`${estilosPostulante.boton} w-full sm:w-auto`}>

@@ -21,7 +21,7 @@ Hay dos tipos de usuario (roles):
   - Tiene su **perfil**, donde puede editar su nombre y apellido.
   - Tiene un **Dashboard** aparte, con dos vistas separadas: **Postulaciones** (los puestos a los que ya se postularon personas, con sus postulantes y el acceso al CV de cada uno) y **Recomendaciones de IA** (puestos y candidatos sugeridos).
   - Desde cada vacante puede ver el dashboard con solo las postulaciones de ese puesto, y desde el dashboard puede volver al detalle de cada puesto.
-  - Los campos de inteligencia artificial (afinidad, análisis, vacante sugerida) aparecen como "Pendiente de análisis". El análisis con IA **no está implementado en esta etapa**; solo quedó preparada la base de datos.
+  - Ve la **afinidad (0 a 100)** de cada postulante con el puesto, con los motivos (qué coincide y qué falta), los **candidatos sugeridos** para cada vacante abierta y las **otras vacantes sugeridas**. Todo lo calcula la IA (ver sección 8). Mientras un CV no se analizó, figura como "Pendiente de análisis".
 
 **Cómo se define el rol:** el registro público crea **siempre** cuentas de postulante. Las cuentas de reclutador se crean a mano desde el panel de Supabase (ver sección 4). Nadie puede elegir ser reclutador desde la app.
 
@@ -47,6 +47,12 @@ Necesitás [Node.js](https://nodejs.org) (versión LTS) y tener el proyecto desc
    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_xxxxxxxxxxxx
    ```
    La URL va **sin barra al final** y sin nada después de `.supabase.co`.
+   Para probar también el análisis con IA en tu computadora, agregá estas dos líneas (son secretas: nunca las subas ni las compartas):
+   ```
+   ANTHROPIC_API_KEY=sk-ant-xxxxxxxxxxxx
+   SUPABASE_SECRET_KEY=sb_secret_xxxxxxxxxxxx
+   ```
+   Sin ellas la app funciona igual, pero los CVs quedan en "Pendiente de análisis".
 4. Iniciá la app:
    ```bash
    npm run dev
@@ -66,6 +72,7 @@ Necesitás [Node.js](https://nodejs.org) (versión LTS) y tener el proyecto desc
    3. `20260924140000_cvs.sql` (CV y bucket privado `cvs`)
    4. `20260924150000_postulaciones.sql` (postulaciones y candidatos sugeridos)
    5. `20261008120000_editar_vacantes.sql` (permite editar vacantes ya creadas)
+   6. `20261015120000_analisis_ia.sql` (análisis con IA: estado de cada CV, motivos de las sugerencias y tope diario)
 
    Cada una tiene que terminar con "Success". No hace falta crear el bucket a mano: la tercera migración lo crea.
 3. **Desactivá la confirmación de email (solo para desarrollo).** En **Authentication → Sign In / Providers → Email**, desactivá "Confirm email". Si está activada, quien se registre tendrá que confirmar su correo antes de poder entrar.
@@ -73,7 +80,7 @@ Necesitás [Node.js](https://nodejs.org) (versión LTS) y tener el proyecto desc
    - la **Project URL** (en la página principal del proyecto o en Settings → API),
    - la clave **Publishable key** (empieza con `sb_publishable_`).
 
-   **No uses** la clave `secret` ni `service_role`. Esta app no las necesita y nunca deben ir en variables que empiecen con `NEXT_PUBLIC_`.
+   Para el análisis con IA (sección 8) también hace falta la **clave secreta** de Supabase (empieza con `sb_secret_`, en la sección **Secret keys**). Es como una llave maestra de la base de datos: va **solo** en las variables del servidor (`SUPABASE_SECRET_KEY`), **nunca** con el prefijo `NEXT_PUBLIC_`, nunca en el código ni en GitHub.
 5. Cuando tengas la app publicada (sección 6), agregá su dirección en **Authentication → URL Configuration** (campo Site URL).
 
 ---
@@ -120,6 +127,12 @@ Las cuentas de reclutador se crean a mano. Hay dos formas; la más simple es con
    | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | la clave `sb_publishable_...` |
 
    Si Vercel avisa que las variables con `NEXT_PUBLIC_` quedan expuestas al navegador, elegí el tipo **Config**: estas dos son públicas por diseño.
+   Para el análisis con IA, cargá también estas **dos variables secretas** (tipo **Sensitive**, sin `NEXT_PUBLIC_`):
+
+   | Key | Value |
+   |---|---|
+   | `ANTHROPIC_API_KEY` | la clave de la API de Anthropic (`sk-ant-...`) |
+   | `SUPABASE_SECRET_KEY` | la clave secreta de Supabase (`sb_secret_...`) |
 4. Apretá **Deploy** y esperá a ver **Ready**. Vercel te da una dirección que termina en `.vercel.app`.
 5. Agregá esa dirección en Supabase, en **Authentication → URL Configuration → Site URL**.
 6. Vercel publica la rama que figure como **Production Branch** (en **Settings → Environments → Production → Branch Tracking**). A partir de ahí, cada `git push` a esa rama redespliega solo.
@@ -142,14 +155,37 @@ src/
     cv/[postulanteId]/         Abre un CV con enlace firmado de 60 segundos
   components/                  Piezas reutilizables de la interfaz
   lib/
-    acciones/                  Acciones del servidor (auth, vacantes, CV, postulaciones)
-    supabase/                  Conexión con Supabase
+    acciones/                  Acciones del servidor (auth, vacantes, CV, postulaciones, perfil, IA)
+    ia/                        Análisis con IA: ajustes, pedido a Claude y guardado de resultados
+    supabase/                  Conexión con Supabase (admin.ts usa la clave secreta, solo en el servidor)
     auth.ts                    Lectura de sesión y control de roles
   proxy.ts                     Mantiene la sesión actualizada
 supabase/
   migrations/                  Archivos SQL de la base de datos
 ```
 
-## 8. Fuera de esta etapa
+## 8. Análisis con IA (Claude)
 
-El análisis de CV con IA (Claude API) y el cálculo de afinidad **todavía no están implementados**. Las columnas `perfil_estructurado` y `resumen` (tabla `cvs`), `afinidad`, `analisis` y `vacante_sugerida_id` (tabla `postulaciones`) y la tabla `candidatos_sugeridos` ya existen, vacías y sin permiso de escritura desde la app, listas para esa etapa.
+**Cómo funciona.** Cuando una persona sube su CV, la app lo analiza **sola, en segundo plano** (la persona no espera): el servidor le manda el PDF a Claude junto con **todas las vacantes abiertas** en ese momento. Claude devuelve un resumen, el perfil ordenado (formación, experiencia, habilidades, idiomas) y, para **cada vacante**, una **afinidad de 0 a 100** con los motivos (qué coincide, qué falta). Se guarda todo en la base de datos:
+
+- `cvs`: `resumen`, `perfil_estructurado` y el estado del análisis (`pendiente`, `analizando`, `listo`, `error`).
+- `candidatos_sugeridos`: la afinidad y los motivos de ese CV con cada vacante abierta.
+- `postulaciones`: la afinidad con la vacante a la que se postuló, y `vacante_sugerida_id` si otra vacante le queda claramente mejor.
+
+La reclutadora lo ve en el **Dashboard → Recomendaciones de IA** y en el dashboard de cada vacante. Si crea vacantes nuevas, usa el botón **"Re-analizar CVs pendientes"** (o "Re-analizar este CV" para una sola persona).
+
+**Configuración** (todo en `src/lib/ia/config.ts`):
+- Modelo: `claude-haiku-5-5` (el más económico). Para probar uno más capaz, se cambia ese valor.
+- **Tope diario:** 5 análisis automáticos por persona en 24 horas.
+- Se comparan hasta 30 vacantes abiertas por CV.
+
+**Seguridad y privacidad**
+- Las claves `ANTHROPIC_API_KEY` y `SUPABASE_SECRET_KEY` viven **solo en el servidor** (variables de Vercel o `.env.local`). Ningún postulante ni reclutador puede escribir resultados de la IA desde el navegador.
+- Un único archivo (`src/lib/supabase/admin.ts`) usa la clave secreta, y la compilación falla si alguien intenta usarlo desde una pantalla.
+- El CV tiene datos personales y se envía a Anthropic para procesarlo. Por eso, al subirlo, la persona ve un **aviso de privacidad**. En el perfil estructurado no se guardan datos de contacto.
+- La IA **orienta, no decide**: siempre se muestran los motivos, y las instrucciones le indican que trate el contenido del CV como datos (si un CV intenta manipular el puntaje, no se lo premia).
+- Poné un **tope de gasto mensual** en la consola de Anthropic y dejá la recarga automática desactivada.
+
+**Si algo falla**
+- Un CV con estado `error` se puede reintentar con el botón "Analizar este CV". Las causas más comunes son: no hay saldo en la cuenta de Anthropic, falta alguna de las dos variables secretas, o se alcanzó el tope diario de esa persona.
+- Para ver el motivo exacto, abrí **Logs** en Vercel y buscá "Análisis IA".

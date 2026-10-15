@@ -1,7 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { exigirRol } from "@/lib/auth";
+import { analizarCv } from "@/lib/ia/analizar";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { rutaCv } from "@/lib/tipos";
 
@@ -27,5 +29,11 @@ export async function registrarCv(nombreArchivo: string): Promise<{ error?: stri
   if (error) return { error: "No se pudo guardar tu CV. Intentá de nuevo." };
 
   revalidatePath("/postulante/perfil");
+
+  // El análisis con IA sigue en segundo plano: la persona no espera a que termine.
+  // (analizarCv nunca lanza errores; si algo falla, deja el CV marcado como "error".)
+  after(async () => {
+    await analizarCv(perfil.id, "automatico");
+  });
   return {};
 }
