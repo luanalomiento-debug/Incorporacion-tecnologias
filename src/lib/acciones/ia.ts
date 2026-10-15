@@ -12,6 +12,7 @@ type Resultado = { error?: string; mensaje?: string };
 const ES_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function refrescarPantallas() {
+  revalidatePath("/reclutador/postulaciones", "layout");
   revalidatePath("/reclutador/dashboard", "layout");
   revalidatePath("/reclutador/vacantes", "layout");
 }

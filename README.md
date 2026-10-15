@@ -19,8 +19,11 @@ Hay dos tipos de usuario (roles):
 - **Reclutador**
   - Crea vacantes (puesto, descripción, requisitos, habilidades, información relevante), las **edita** cuando hace falta y las activa o desactiva. Las vacantes no se borran.
   - Tiene su **perfil**, donde puede editar su nombre y apellido.
-  - Tiene un **Dashboard** aparte, con dos vistas separadas: **Postulaciones** (los puestos a los que ya se postularon personas, con sus postulantes y el acceso al CV de cada uno) y **Recomendaciones de IA** (puestos y candidatos sugeridos).
-  - Desde cada vacante puede ver el dashboard con solo las postulaciones de ese puesto, y desde el dashboard puede volver al detalle de cada puesto.
+  - La vista tiene una parte para **operar** y otra **estratégica**:
+    - **Vacantes** y **Nueva vacante** (crear, editar, activar o desactivar).
+    - **Postulaciones**: quiénes se postularon a cada puesto, ordenados por afinidad, con el acceso a su CV y un botón para **enviar un correo** (abre tu programa de correo con el mensaje empezado). Dentro de esta pestaña están las **Recomendaciones de IA**.
+    - **Dashboard** (estratégico): un resumen global, sin nombres ni listas de personas: postulaciones recibidas, promedio de matching, cuántas postulaciones hicieron un buen match, y el **valor extra de la IA** (cuántas personas y vacantes conectó además de las postulaciones). 
+  - Desde cada vacante, el botón **Ver postulaciones** lleva a las postulaciones de ese puesto, con el **mejor match** y el **promedio de matching**; el botón volver lleva a Vacantes.
   - Ve la **afinidad (0 a 100)** de cada postulante con el puesto, con los motivos (qué coincide y qué falta), los **candidatos sugeridos** para cada vacante abierta y las **otras vacantes sugeridas**. Todo lo calcula la IA (ver sección 8). Mientras un CV no se analizó, figura como "Pendiente de análisis".
 
 **Cómo se define el rol:** el registro público crea **siempre** cuentas de postulante. Las cuentas de reclutador se crean a mano desde el panel de Supabase (ver sección 4). Nadie puede elegir ser reclutador desde la app.
@@ -172,7 +175,7 @@ supabase/
 - `candidatos_sugeridos`: la afinidad y los motivos de ese CV con cada vacante abierta.
 - `postulaciones`: la afinidad con la vacante a la que se postuló, y `vacante_sugerida_id` si otra vacante le queda claramente mejor.
 
-La reclutadora lo ve en el **Dashboard → Recomendaciones de IA** y en el dashboard de cada vacante. Si crea vacantes nuevas, usa el botón **"Re-analizar CVs pendientes"** (o "Re-analizar este CV" para una sola persona).
+La reclutadora lo ve en el **Postulaciones → Recomendaciones de IA** y en el dashboard de cada vacante. Si crea vacantes nuevas, usa el botón **"Re-analizar CVs pendientes"** (o "Re-analizar este CV" para una sola persona).
 
 **Configuración** (todo en `src/lib/ia/config.ts`):
 - Modelo: `claude-haiku-5-5` (el más económico). Para probar uno más capaz, se cambia ese valor.

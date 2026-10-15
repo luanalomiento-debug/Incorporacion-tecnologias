@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { crearClienteServidor } from "@/lib/supabase/server";
-import { cargarEstadosCv, cargarPostulaciones } from "@/lib/dashboard";
-import { COLUMNAS_VACANTE, formatearFecha, type Vacante } from "@/lib/tipos";
+import { cargarEstadosCv, cargarPostulaciones, nombreCompleto, ordenarPorAfinidad, resumenAfinidad } from "@/lib/dashboard";
+import { COLUMNAS_VACANTE, type Vacante } from "@/lib/tipos";
 import { Icono } from "@/components/postulante/Icono";
 import { ActualizarSiAnalizando } from "@/components/reclutador/ActualizarSiAnalizando";
 import { EtiquetaEstado } from "@/components/reclutador/EtiquetaEstado";
@@ -32,13 +32,14 @@ export default async function PostulacionesVacantePage({
     supabase,
     postulaciones.map((p) => p.postulante_id),
   );
-  const ultima = postulaciones[0]?.creado_en;
+  const { analizadas, promedio, mejor } = resumenAfinidad(postulaciones);
+  const ordenadas = ordenarPorAfinidad(postulaciones);
 
   return (
     <div className="space-y-6">
       <ActualizarSiAnalizando activo={[...estadosCv.values()].includes("analizando")} />
-      <Link href="/reclutador/dashboard" className="inline-flex items-center gap-1 text-sm font-semibold text-blue-700 hover:underline">
-        <Icono nombre="flecha" className="h-4 w-4 rotate-180" /> Volver al dashboard
+      <Link href="/reclutador" className="inline-flex items-center gap-1 text-sm font-semibold text-blue-700 hover:underline">
+        <Icono nombre="flecha" className="h-4 w-4 rotate-180" /> Volver a las vacantes
       </Link>
 
       <header className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-marca via-blue-900 to-blue-600 p-6 text-white shadow-lg sm:p-8">
@@ -60,9 +61,23 @@ export default async function PostulacionesVacantePage({
         </div>
       </header>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-3">
         <TarjetaDato etiqueta="Postulaciones recibidas" valor={postulaciones.length} />
-        <TarjetaDato etiqueta="Última postulación" valor={ultima ? formatearFecha(ultima) : "—"} />
+        <TarjetaDato
+          etiqueta="Mejor match"
+          texto
+          valor={mejor ? nombreCompleto(mejor.postulante) : "Pendiente de análisis"}
+          detalle={mejor ? `Afinidad ${Number(mejor.afinidad)} de 100` : undefined}
+        />
+        <TarjetaDato
+          etiqueta="Promedio de matching"
+          valor={promedio === null ? "—" : promedio}
+          detalle={
+            promedio === null
+              ? "Todavía no hay CVs analizados"
+              : `Sobre ${analizadas} de ${postulaciones.length} ${postulaciones.length === 1 ? "postulación" : "postulaciones"} analizadas`
+          }
+        />
       </div>
 
       {postulaciones.length === 0 ? (
@@ -75,7 +90,7 @@ export default async function PostulacionesVacantePage({
       ) : (
         <section className={estilosReclutador.tarjeta}>
           <h2 className="mb-4 font-bold text-marca">Postulantes</h2>
-          <ListaPostulantes postulaciones={postulaciones} titulosVacantes={titulos} estadosCv={estadosCv} />
+          <ListaPostulantes postulaciones={ordenadas} titulosVacantes={titulos} estadosCv={estadosCv} mejorId={mejor?.id} />
         </section>
       )}
     </div>

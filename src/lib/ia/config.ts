@@ -30,3 +30,6 @@ export const CONCURRENCIA_REANALISIS = 5;
 
 // Tiempo máximo de espera a la respuesta de Claude (milisegundos).
 export const TIEMPO_MAXIMO_CLAUDE_MS = 40_000;
+
+// A partir de esta afinidad (0-100) se considera un "buen match". Se usa en el dashboard estratégico.
+export const AFINIDAD_BUEN_MATCH = 70;

@@ -4,8 +4,17 @@ export type FilaGrafico = { id: string; etiqueta: string; valor: number; href: s
 
 // Barras horizontales de un solo color: cuántas postulaciones tiene cada vacante.
 // Cada fila es un enlace al dashboard de esa vacante.
-export function GraficoBarras({ filas, unidad }: { filas: FilaGrafico[]; unidad: string }) {
-  const maximo = Math.max(...filas.map((f) => f.valor), 1);
+export function GraficoBarras({
+  filas,
+  unidad,
+  maximo: maximoFijo,
+}: {
+  filas: FilaGrafico[];
+  unidad: string;
+  // Si se indica (por ejemplo 100 para una afinidad), las barras se miden contra ese valor.
+  maximo?: number;
+}) {
+  const maximo = maximoFijo ?? Math.max(...filas.map((f) => f.valor), 1);
   return (
     <ul className="space-y-1">
       {filas.map((f) => (
@@ -20,7 +29,7 @@ export function GraficoBarras({ filas, unidad }: { filas: FilaGrafico[]; unidad:
               <span className="h-5 flex-1">
                 <span
                   className="block h-5 rounded-r-[4px] bg-blue-600 transition group-hover:bg-blue-700"
-                  style={{ width: `${Math.max((f.valor / maximo) * 100, 2)}%` }}
+                  style={{ width: f.valor === 0 ? 0 : `${Math.max((f.valor / maximo) * 100, 2)}%` }}
                 />
               </span>
               <span className="w-8 shrink-0 text-right text-sm font-semibold text-marca">{f.valor}</span>

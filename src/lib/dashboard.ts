@@ -65,3 +65,28 @@ export async function cargarEstadosCv(supabase: Cliente, postulanteIds?: string[
   }
   return estados;
 }
+
+// ---------------------------------------------------------------------------
+// Resúmenes de afinidad
+// ---------------------------------------------------------------------------
+
+// Mejor match y promedio de una lista de postulaciones (solo cuentan las que ya tienen afinidad).
+export function resumenAfinidad(postulaciones: PostulacionDashboard[]) {
+  const conAfinidad = postulaciones.filter((p) => p.afinidad !== null);
+  const promedio =
+    conAfinidad.length > 0
+      ? Math.round(conAfinidad.reduce((suma, p) => suma + Number(p.afinidad), 0) / conAfinidad.length)
+      : null;
+  const mejor = ordenarPorAfinidad(conAfinidad)[0] ?? null;
+  return { analizadas: conAfinidad.length, promedio, mejor };
+}
+
+// De mayor a menor afinidad; las que todavía no tienen, al final; el empate lo gana la más antigua.
+export function ordenarPorAfinidad(postulaciones: PostulacionDashboard[]) {
+  return [...postulaciones].sort((a, b) => {
+    if (a.afinidad === null && b.afinidad === null) return a.creado_en.localeCompare(b.creado_en);
+    if (a.afinidad === null) return 1;
+    if (b.afinidad === null) return -1;
+    return Number(b.afinidad) - Number(a.afinidad) || a.creado_en.localeCompare(b.creado_en);
+  });
+}

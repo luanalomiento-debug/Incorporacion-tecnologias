@@ -1,3 +1,4 @@
+import { enlaceCorreo } from "@/lib/correo";
 import { formatearFecha } from "@/lib/tipos";
 import { nombreCompleto, type EstadoCv, type PostulacionDashboard } from "@/lib/dashboard";
 import { Icono } from "@/components/postulante/Icono";
@@ -10,10 +11,13 @@ export function ListaPostulantes({
   postulaciones,
   titulosVacantes,
   estadosCv,
+  mejorId,
 }: {
   postulaciones: PostulacionDashboard[];
   titulosVacantes: Map<string, string>;
   estadosCv: Map<string, EstadoCv>;
+  // Id de la postulación con mejor match de esta lista (se marca con una etiqueta).
+  mejorId?: string | null;
 }) {
   return (
     <ul className="divide-y divide-slate-100">
@@ -37,19 +41,40 @@ export function ListaPostulantes({
                   {iniciales || "?"}
                 </span>
                 <div className="min-w-0">
-                  <p className="font-semibold text-marca">{nombre}</p>
+                  <p className="flex flex-wrap items-center gap-2 font-semibold text-marca">
+                    {nombre}
+                    {mejorId === p.id && (
+                      <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-800">
+                        Mejor match
+                      </span>
+                    )}
+                  </p>
                   {p.postulante && <p className="break-all text-sm text-slate-600">{p.postulante.email}</p>}
                   <p className="text-xs text-slate-500">Se postuló el {formatearFecha(p.creado_en)}</p>
                 </div>
               </div>
-              <a
-                href={`/cv/${p.postulante_id}`}
-                target="_blank"
-                rel="noopener"
-                className={`${estilosReclutador.botonSecundario} !px-4 !py-2 text-sm`}
-              >
-                <Icono nombre="documento" className="h-4 w-4" /> Ver CV
-              </a>
+              <div className="flex flex-wrap gap-2">
+                {p.postulante && (
+                  <a
+                    href={enlaceCorreo({
+                      email: p.postulante.email,
+                      nombre: p.postulante.nombre,
+                      puesto: titulosVacantes.get(p.vacante_id) ?? "la vacante",
+                    })}
+                    className={`${estilosReclutador.botonSecundario} !px-4 !py-2 text-sm`}
+                  >
+                    <Icono nombre="correo" className="h-4 w-4" /> Enviar correo
+                  </a>
+                )}
+                <a
+                  href={`/cv/${p.postulante_id}`}
+                  target="_blank"
+                  rel="noopener"
+                  className={`${estilosReclutador.botonSecundario} !px-4 !py-2 text-sm`}
+                >
+                  <Icono nombre="documento" className="h-4 w-4" /> Ver CV
+                </a>
+              </div>
             </div>
             {(() => {
               const estado = estadosCv.get(p.postulante_id);
