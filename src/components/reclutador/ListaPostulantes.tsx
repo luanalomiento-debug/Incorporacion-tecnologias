@@ -1,19 +1,19 @@
 import { formatearFecha } from "@/lib/tipos";
-import { nombreCompleto, type PostulacionDashboard } from "@/lib/dashboard";
+import { nombreCompleto, type EstadoCv, type PostulacionDashboard } from "@/lib/dashboard";
 import { Icono } from "@/components/postulante/Icono";
+import { EstadoAnalisis, MedidorAfinidad, MotivosDeAfinidad } from "@/components/reclutador/Afinidad";
+import { BotonReanalizar } from "@/components/reclutador/BotonReanalizar";
 import { estilosReclutador } from "@/components/reclutador/estilos";
-
-function Pendiente() {
-  return <span className="text-slate-400">Pendiente de análisis</span>;
-}
 
 // Postulantes de una vacante, con acceso al CV y los campos de IA (todavía vacíos).
 export function ListaPostulantes({
   postulaciones,
   titulosVacantes,
+  estadosCv,
 }: {
   postulaciones: PostulacionDashboard[];
   titulosVacantes: Map<string, string>;
+  estadosCv: Map<string, EstadoCv>;
 }) {
   return (
     <ul className="divide-y divide-slate-100">
@@ -51,26 +51,36 @@ export function ListaPostulantes({
                 <Icono nombre="documento" className="h-4 w-4" /> Ver CV
               </a>
             </div>
-            <dl className="grid gap-2 rounded-xl bg-slate-50 px-4 py-3 text-sm sm:grid-cols-3">
-              <div>
-                <dt className="font-medium text-slate-500">Afinidad</dt>
-                <dd>{p.afinidad === null ? <Pendiente /> : p.afinidad}</dd>
-              </div>
-              <div>
-                <dt className="font-medium text-slate-500">Análisis</dt>
-                <dd>{p.analisis === null ? <Pendiente /> : "Disponible"}</dd>
-              </div>
-              <div>
-                <dt className="font-medium text-slate-500">Vacante sugerida</dt>
-                <dd>
-                  {p.vacante_sugerida_id === null ? (
-                    <Pendiente />
-                  ) : (
-                    (titulosVacantes.get(p.vacante_sugerida_id) ?? "—")
+            {(() => {
+              const estado = estadosCv.get(p.postulante_id);
+              const sugerida = p.vacante_sugerida_id ? (titulosVacantes.get(p.vacante_sugerida_id) ?? "—") : null;
+              return (
+                <div className="space-y-3 rounded-xl bg-slate-50 px-4 py-3 text-sm">
+                  <dl className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <dt className="mb-1 font-medium text-slate-500">Afinidad con este puesto</dt>
+                      <dd>{p.afinidad === null ? <EstadoAnalisis estado={estado} /> : <MedidorAfinidad valor={Number(p.afinidad)} />}</dd>
+                    </div>
+                    <div>
+                      <dt className="mb-1 font-medium text-slate-500">Otra vacante sugerida</dt>
+                      <dd>
+                        {sugerida ? (
+                          <span className="font-semibold text-marca">{sugerida}</span>
+                        ) : p.afinidad === null ? (
+                          <span className="text-slate-400">Pendiente de análisis</span>
+                        ) : (
+                          <span className="text-slate-600">Ninguna: este puesto es de los que mejor encajan</span>
+                        )}
+                      </dd>
+                    </div>
+                  </dl>
+                  {p.analisis && <MotivosDeAfinidad motivos={p.analisis} />}
+                  {estado !== "analizando" && (
+                    <BotonReanalizar postulanteId={p.postulante_id} texto={p.afinidad === null ? "Analizar este CV" : "Re-analizar este CV"} />
                   )}
-                </dd>
-              </div>
-            </dl>
+                </div>
+              );
+            })()}
           </li>
         );
       })}

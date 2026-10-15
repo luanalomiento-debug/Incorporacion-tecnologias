@@ -1,3 +1,5 @@
+import { MINUTOS_ANALISIS_VENCIDO } from "@/lib/ia/config";
+import type { MotivosAfinidad } from "@/lib/ia/esquema";
 import { crearClienteServidor } from "@/lib/supabase/server";
 
 type Cliente = Awaited<ReturnType<typeof crearClienteServidor>>;
@@ -10,7 +12,7 @@ export type PostulacionDashboard = {
   postulante_id: string;
   creado_en: string;
   afinidad: number | null;
-  analisis: unknown;
+  analisis: MotivosAfinidad | null;
   vacante_sugerida_id: string | null;
   postulante: Postulante;
 };
@@ -40,4 +42,26 @@ export function agruparPorVacante(postulaciones: PostulacionDashboard[]) {
     mapa.set(p.vacante_id, lista);
   }
   return mapa;
+}
+
+export type EstadoCv = "pendiente" | "analizando" | "listo" | "error";
+
+// Estado del análisis de cada CV. Un análisis "en curso" que lleva demasiado tiempo
+// se considera fallido, para que nunca quede trabado.
+export async function cargarEstadosCv(supabase: Cliente, postulanteIds?: string[]) {
+  let consulta = supabase
+    .from("cvs")
+    .select("postulante_id, analisis_estado, analisis_iniciado_en");
+  if (postulanteIds) consulta = consulta.in("postulante_id", postulanteIds);
+  const { data } = await consulta;
+
+  const vencido = Date.now() - MINUTOS_ANALISIS_VENCIDO * 60 * 1000;
+  const estados = new Map<string, EstadoCv>();
+  for (const c of data ?? []) {
+    let estado = c.analisis_estado as EstadoCv;
+    if (estado === "analizando" && (!c.analisis_iniciado_en || new Date(c.analisis_iniciado_en).getTime() < vencido))
+      estado = "error";
+    estados.set(c.postulante_id as string, estado);
+  }
+  return estados;
 }

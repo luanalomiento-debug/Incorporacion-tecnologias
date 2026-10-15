@@ -7,6 +7,9 @@ import { Icono } from "@/components/postulante/Icono";
 import { SubirCv } from "@/components/SubirCv";
 import { estilosPostulante } from "@/components/postulante/estilos";
 
+// Al subir el CV se dispara el análisis con IA en segundo plano: se amplía el tiempo máximo.
+export const maxDuration = 60;
+
 export default async function PerfilPostulantePage() {
   const perfil = await exigirRol("postulante");
   const supabase = await crearClienteServidor();

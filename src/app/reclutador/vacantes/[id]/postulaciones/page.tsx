@@ -1,13 +1,17 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { crearClienteServidor } from "@/lib/supabase/server";
-import { cargarPostulaciones } from "@/lib/dashboard";
+import { cargarEstadosCv, cargarPostulaciones } from "@/lib/dashboard";
 import { COLUMNAS_VACANTE, formatearFecha, type Vacante } from "@/lib/tipos";
 import { Icono } from "@/components/postulante/Icono";
+import { ActualizarSiAnalizando } from "@/components/reclutador/ActualizarSiAnalizando";
 import { EtiquetaEstado } from "@/components/reclutador/EtiquetaEstado";
 import { ListaPostulantes } from "@/components/reclutador/ListaPostulantes";
 import { TarjetaDato } from "@/components/reclutador/TarjetaDato";
 import { estilosReclutador } from "@/components/reclutador/estilos";
+
+// Los análisis con IA que se disparan desde esta pantalla pueden tardar: se amplía el tiempo.
+export const maxDuration = 60;
 
 // Dashboard de una sola vacante: solo las postulaciones a ese puesto.
 export default async function PostulacionesVacantePage({
@@ -24,10 +28,15 @@ export default async function PostulacionesVacantePage({
   if (!vacante) notFound();
 
   const titulos = new Map((todas ?? []).map((v) => [v.id, v.titulo]));
+  const estadosCv = await cargarEstadosCv(
+    supabase,
+    postulaciones.map((p) => p.postulante_id),
+  );
   const ultima = postulaciones[0]?.creado_en;
 
   return (
     <div className="space-y-6">
+      <ActualizarSiAnalizando activo={[...estadosCv.values()].includes("analizando")} />
       <Link href="/reclutador/dashboard" className="inline-flex items-center gap-1 text-sm font-semibold text-blue-700 hover:underline">
         <Icono nombre="flecha" className="h-4 w-4 rotate-180" /> Volver al dashboard
       </Link>
@@ -66,7 +75,7 @@ export default async function PostulacionesVacantePage({
       ) : (
         <section className={estilosReclutador.tarjeta}>
           <h2 className="mb-4 font-bold text-marca">Postulantes</h2>
-          <ListaPostulantes postulaciones={postulaciones} titulosVacantes={titulos} />
+          <ListaPostulantes postulaciones={postulaciones} titulosVacantes={titulos} estadosCv={estadosCv} />
         </section>
       )}
     </div>

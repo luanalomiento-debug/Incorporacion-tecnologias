@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { crearClienteServidor } from "@/lib/supabase/server";
-import { agruparPorVacante, cargarPostulaciones } from "@/lib/dashboard";
+import { agruparPorVacante, cargarEstadosCv, cargarPostulaciones } from "@/lib/dashboard";
 import { COLUMNAS_VACANTE, type Vacante } from "@/lib/tipos";
 import { Icono } from "@/components/postulante/Icono";
+import { ActualizarSiAnalizando } from "@/components/reclutador/ActualizarSiAnalizando";
 import { EtiquetaEstado } from "@/components/reclutador/EtiquetaEstado";
 import { GraficoBarras } from "@/components/reclutador/GraficoBarras";
 import { ListaPostulantes } from "@/components/reclutador/ListaPostulantes";
@@ -10,12 +11,16 @@ import { PestanasDashboard } from "@/components/reclutador/PestanasDashboard";
 import { TarjetaDato } from "@/components/reclutador/TarjetaDato";
 import { estilosReclutador } from "@/components/reclutador/estilos";
 
+// Los análisis con IA que se disparan desde esta pantalla pueden tardar: se amplía el tiempo.
+export const maxDuration = 60;
+
 // Dashboard 1: los puestos a los que efectivamente se postularon personas.
 export default async function DashboardPostulacionesPage() {
   const supabase = await crearClienteServidor();
-  const [{ data }, postulaciones] = await Promise.all([
+  const [{ data }, postulaciones, estadosCv] = await Promise.all([
     supabase.from("vacantes").select(COLUMNAS_VACANTE).order("creado_en", { ascending: false }),
     cargarPostulaciones(supabase),
+    cargarEstadosCv(supabase),
   ]);
   const vacantes = (data ?? []) as Vacante[];
   const porVacante = agruparPorVacante(postulaciones);
@@ -29,6 +34,7 @@ export default async function DashboardPostulacionesPage() {
 
   return (
     <div className="space-y-6">
+      <ActualizarSiAnalizando activo={[...estadosCv.values()].includes("analizando")} />
       <div className="space-y-4">
         <div>
           <h1 className={estilosReclutador.titulo}>Dashboard</h1>
@@ -96,7 +102,7 @@ export default async function DashboardPostulacionesPage() {
                       </Link>
                     </div>
                   </div>
-                  <ListaPostulantes postulaciones={lista} titulosVacantes={titulos} />
+                  <ListaPostulantes postulaciones={lista} titulosVacantes={titulos} estadosCv={estadosCv} />
                 </section>
               );
             })}
