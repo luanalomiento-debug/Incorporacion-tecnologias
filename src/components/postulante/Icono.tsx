@@ -27,6 +27,12 @@ const FORMAS = {
       <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
     </>
   ),
+  correo: (
+    <>
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <path d="M3 7l9 6 9-6" />
+    </>
+  ),
   rayo: <path d="M13 2L3 14h9l-1 8 10-12h-9z" />,
   info: (
     <>
