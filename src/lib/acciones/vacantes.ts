@@ -86,3 +86,21 @@ export async function editarVacante(
   revalidatePath(`/postulante/vacantes/${id}`);
   redirect(`/reclutador/vacantes/${id}`);
 }
+
+// Elimina una vacante para siempre. Atención: la base de datos borra también, en cascada,
+// todas sus postulaciones y sus candidatos sugeridos. Solo un reclutador puede hacerlo
+// (lo garantiza la política de la base de datos). Si ya no existe o no se pudo, avisa.
+export async function eliminarVacante(id: string): Promise<{ error?: string }> {
+  await exigirRol("reclutador");
+
+  const supabase = await crearClienteServidor();
+  const { data, error } = await supabase.from("vacantes").delete().eq("id", id).select("id");
+
+  if (error || !data || data.length === 0)
+    return { error: "No se pudo eliminar la vacante. Puede que ya no exista. Actualizá la página e intentá de nuevo." };
+
+  // Se actualizan las pantallas de la reclutadora y las de los postulantes.
+  revalidatePath("/reclutador", "layout");
+  revalidatePath("/postulante", "layout");
+  return {};
+}

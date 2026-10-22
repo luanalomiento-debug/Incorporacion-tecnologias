@@ -17,7 +17,7 @@ Hay dos tipos de usuario (roles):
   - Se postula a una vacante con su CV (una sola vez por vacante).
   - Ve sus postulaciones en "Mis postulaciones".
 - **Reclutador**
-  - Crea vacantes (puesto, descripción, requisitos, habilidades, información relevante), las **edita** cuando hace falta y las activa o desactiva. Las vacantes no se borran.
+  - Crea vacantes (puesto, descripción, requisitos, habilidades, información relevante), las **edita** cuando hace falta y las activa o desactiva. También puede **eliminarlas** (con una ventana de confirmación): se borran para siempre, junto con sus postulaciones y las sugerencias de la IA. Si solo quiere que dejen de verse, conviene desactivarlas.
   - Tiene su **perfil**, donde puede editar su nombre y apellido.
   - La vista tiene una parte para **operar** y otra **estratégica**:
     - **Vacantes** y **Nueva vacante** (crear, editar, activar o desactivar).
@@ -76,6 +76,7 @@ Necesitás [Node.js](https://nodejs.org) (versión LTS) y tener el proyecto desc
    4. `20260924150000_postulaciones.sql` (postulaciones y candidatos sugeridos)
    5. `20261008120000_editar_vacantes.sql` (permite editar vacantes ya creadas)
    6. `20261015120000_analisis_ia.sql` (análisis con IA: estado de cada CV, motivos de las sugerencias y tope diario)
+   7. `20261022120000_eliminar_vacantes.sql` (permite eliminar vacantes; las borra junto con sus postulaciones)
 
    Cada una tiene que terminar con "Success". No hace falta crear el bucket a mano: la tercera migración lo crea.
 3. **Desactivá la confirmación de email (solo para desarrollo).** En **Authentication → Sign In / Providers → Email**, desactivá "Confirm email". Si está activada, quien se registre tendrá que confirmar su correo antes de poder entrar.

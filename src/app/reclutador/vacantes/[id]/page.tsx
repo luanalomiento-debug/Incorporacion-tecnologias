@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { COLUMNAS_VACANTE, formatearFecha, type Vacante } from "@/lib/tipos";
 import { BotonEstadoVacante } from "@/components/BotonEstadoVacante";
+import { BotonEliminarVacante } from "@/components/reclutador/BotonEliminarVacante";
 import { DetalleVacantePostulante } from "@/components/postulante/DetalleVacantePostulante";
 import { Icono } from "@/components/postulante/Icono";
 import { EtiquetaEstado } from "@/components/reclutador/EtiquetaEstado";
@@ -58,6 +59,7 @@ export default async function VacanteReclutadorPage({
             <div className="rounded-xl bg-white p-1">
               <BotonEstadoVacante id={vacante.id} activa={vacante.activa} />
             </div>
+            <BotonEliminarVacante id={vacante.id} titulo={vacante.titulo} postulaciones={cantidad} irA="/reclutador" claro />
           </div>
         </div>
       </header>
