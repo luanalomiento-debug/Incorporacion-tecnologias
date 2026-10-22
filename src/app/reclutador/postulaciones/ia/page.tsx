@@ -45,9 +45,7 @@ export default async function DashboardIaPage() {
   ]);
   const vacantes = (dataVacantes ?? []) as Vacante[];
   const sugeridos = (dataSugeridos ?? []) as unknown as Sugerido[];
-  const titulos = new Map(vacantes.map((v) => [v.id, v.titulo]));
   const yaSePostulo = new Set(postulaciones.map((p) => `${p.vacante_id}|${p.postulante_id}`));
-  const reubicaciones = postulaciones.filter((p) => p.vacante_sugerida_id !== null);
 
   const cuenta = { listo: 0, pendiente: 0, analizando: 0, error: 0 };
   for (const estado of estadosCv.values()) cuenta[estado] += 1;
@@ -59,7 +57,9 @@ export default async function DashboardIaPage() {
       <div className="space-y-4">
         <div>
           <h1 className={estilosReclutador.titulo}>Postulaciones</h1>
-          <p className="mt-1 text-slate-600">Los puestos y las recomendaciones que hace la IA.</p>
+          <p className="mt-1 text-slate-600">
+            Personas que la IA recomienda para cada puesto y que todavía no se postularon a él.
+          </p>
         </div>
         <PestanasPostulaciones activa="ia" />
       </div>
@@ -94,12 +94,15 @@ export default async function DashboardIaPage() {
       </section>
 
       <section className="space-y-4">
-        <h2 className="text-xl font-bold text-marca">Candidatos sugeridos por puesto</h2>
+        <h2 className="text-xl font-bold text-marca">Personas recomendadas por puesto</h2>
         {vacantes.length === 0 ? (
           <p className={`${estilosReclutador.tarjeta} text-slate-600`}>Todavía no hay vacantes publicadas.</p>
         ) : (
           vacantes.map((v) => {
-            const deEstaVacante = sugeridos.filter((s) => s.vacante_id === v.id && s.afinidad !== null);
+            // Solo recomendaciones "extra": personas que la IA sugiere y que NO se postularon a este puesto.
+            const deEstaVacante = sugeridos.filter(
+              (s) => s.vacante_id === v.id && s.afinidad !== null && !yaSePostulo.has(`${v.id}|${s.postulante_id}`),
+            );
             const lista = deEstaVacante
               .filter((s) => Number(s.afinidad) >= AFINIDAD_MINIMA_LISTA)
               .slice(0, MAX_CANDIDATOS_POR_PUESTO);
@@ -129,7 +132,10 @@ export default async function DashboardIaPage() {
                     ) : !v.activa && deEstaVacante.length === 0 ? (
                       <span className="text-slate-600">Vacante inactiva: no se compara con los CVs.</span>
                     ) : deEstaVacante.length === 0 ? (
-                      <Pendiente texto="Todavía no se compararon los CVs con esta vacante: usá «Re-analizar CVs pendientes»." />
+                      <span className="text-slate-600">
+                        La IA no tiene recomendaciones para este puesto. Si es una vacante nueva, abrila y usá «Re-analizar
+                        CVs con esta vacante».
+                      </span>
                     ) : (
                       <span className="text-slate-600">
                         Ningún CV analizado llega a la afinidad mínima ({AFINIDAD_MINIMA_LISTA}).
@@ -144,11 +150,6 @@ export default async function DashboardIaPage() {
                           <div className="min-w-0">
                             <p className="flex flex-wrap items-center gap-2 font-semibold text-marca">
                               {nombreCompleto(s.postulante)}
-                              {yaSePostulo.has(`${v.id}|${s.postulante_id}`) && (
-                                <span className="rounded-full bg-green-50 px-2 py-0.5 text-xs font-semibold text-green-700">
-                                  Ya se postuló
-                                </span>
-                              )}
                             </p>
                             {s.postulante && <p className="break-all text-sm text-slate-600">{s.postulante.email}</p>}
                           </div>
@@ -173,29 +174,6 @@ export default async function DashboardIaPage() {
             );
           })
         )}
-      </section>
-
-      <section className="space-y-4">
-        <h2 className="text-xl font-bold text-marca">Postulantes con otra vacante sugerida</h2>
-        <div className={`${estilosReclutador.tarjeta} text-sm`}>
-          {reubicaciones.length === 0 ? (
-            <Pendiente texto={cuenta.listo === 0 ? "Pendiente de análisis" : "Por ahora ninguna postulación tiene una vacante que le encaje claramente mejor."} />
-          ) : (
-            <ul className="divide-y divide-slate-100">
-              {reubicaciones.map((p) => (
-                <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 py-3 first:pt-0 last:pb-0">
-                  <div>
-                    <p className="font-semibold text-marca">{nombreCompleto(p.postulante)}</p>
-                    <p className="text-slate-500">Se postuló a {titulos.get(p.vacante_id) ?? "—"}</p>
-                  </div>
-                  <span className="text-slate-700">
-                    La IA sugiere: <strong className="text-marca">{titulos.get(p.vacante_sugerida_id ?? "") ?? "—"}</strong>
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
       </section>
     </div>
   );
