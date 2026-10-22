@@ -12,11 +12,13 @@ export function BotonReanalizar({
   vacanteId,
   texto,
   claro = false,
+  grande = false,
 }: {
   postulanteId?: string;
   vacanteId?: string;
   texto: string;
   claro?: boolean;
+  grande?: boolean;
 }) {
   const router = useRouter();
   const [enviando, setEnviando] = useState(false);
@@ -37,7 +39,7 @@ export function BotonReanalizar({
 
   const estilo = claro
     ? "inline-flex items-center justify-center rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-marca shadow-sm transition hover:bg-blue-50 disabled:opacity-60"
-    : `${estilosReclutador.botonSecundario} !px-3 !py-1.5 text-xs`;
+    : `${estilosReclutador.botonSecundario} ${grande ? "!px-4 !py-2 text-sm" : "!px-3 !py-1.5 text-xs"}`;
 
   return (
     <div className="space-y-2">
