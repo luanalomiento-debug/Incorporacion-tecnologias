@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { agruparPorVacante, cargarEstadosCv, cargarPostulaciones, resumenAfinidad } from "@/lib/dashboard";
-import { AFINIDAD_BUEN_MATCH } from "@/lib/ia/config";
+import { AFINIDAD_BUEN_MATCH, AFINIDAD_MINIMA_LISTA } from "@/lib/ia/config";
 import { COLUMNAS_VACANTE, type Vacante } from "@/lib/tipos";
 import { GraficoBarras } from "@/components/reclutador/GraficoBarras";
 import { TarjetaDato } from "@/components/reclutador/TarjetaDato";
@@ -36,8 +36,16 @@ export default async function DashboardEstrategicoPage() {
   const buenMatch = postulaciones.filter((p) => p.afinidad !== null && Number(p.afinidad) >= AFINIDAD_BUEN_MATCH).length;
 
   // --- El valor extra de la IA
-  const conOtraSugerida = postulaciones.filter((p) => p.vacante_sugerida_id !== null).length;
   const yaPostulados = new Set(postulaciones.map((p) => `${p.vacante_id}|${p.postulante_id}`));
+  // Todos los matches que la IA encontró en vacantes abiertas a las que la persona NO se postuló
+  // (los mismos que aparecen en Postulaciones → Recomendaciones de IA).
+  const matchesExtra = candidatos.filter(
+    (c) =>
+      c.afinidad !== null &&
+      Number(c.afinidad) >= AFINIDAD_MINIMA_LISTA &&
+      idsActivas.has(c.vacante_id) &&
+      !yaPostulados.has(`${c.vacante_id}|${c.postulante_id}`),
+  ).length;
   const buenosSinPostular = candidatos.filter(
     (c) =>
       c.afinidad !== null &&
@@ -133,10 +141,10 @@ export default async function DashboardEstrategicoPage() {
             <>
               <div className="mt-6 grid gap-6 sm:grid-cols-3">
                 <div>
-                  <p className="text-5xl font-bold">{conOtraSugerida}</p>
+                  <p className="text-5xl font-bold">{matchesExtra}</p>
                   <p className="mt-2 text-sm text-blue-100">
-                    {conOtraSugerida === 1 ? "postulación" : "postulaciones"} en las que la IA encontró otra vacante
-                    que le encaja mejor a la persona
+                    {matchesExtra === 1 ? "match extra" : "matches extra"} que encontró la IA en vacantes a las que la
+                    persona no se postuló
                   </p>
                 </div>
                 <div>
@@ -155,7 +163,7 @@ export default async function DashboardEstrategicoPage() {
                 </div>
               </div>
               <p className="mt-6 text-xs text-blue-200">
-                Un buen match es una afinidad de {AFINIDAD_BUEN_MATCH} o más (sobre 100). Hay {cvsListos}{" "}
+                Se cuenta como match extra una afinidad de {AFINIDAD_MINIMA_LISTA} o más y como buen match, de {AFINIDAD_BUEN_MATCH} o más (sobre 100). Hay {cvsListos}{" "}
                 {cvsListos === 1 ? "CV analizado" : "CVs analizados"} de {estadosCv.size}.
               </p>
             </>

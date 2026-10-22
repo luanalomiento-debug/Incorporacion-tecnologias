@@ -176,7 +176,7 @@ supabase/
 - `candidatos_sugeridos`: la afinidad y los motivos de ese CV con cada vacante abierta.
 - `postulaciones`: la afinidad con la vacante a la que se postuló, y `vacante_sugerida_id` si otra vacante le queda claramente mejor.
 
-La reclutadora lo ve en el **Postulaciones → Recomendaciones de IA** y en el dashboard de cada vacante. Si crea vacantes nuevas, usa el botón **"Re-analizar CVs pendientes"** (o "Re-analizar este CV" para una sola persona).
+La reclutadora lo ve en el **Postulaciones → Recomendaciones de IA** y en el dashboard de cada vacante. Al entrar, la reclutadora ve el **Dashboard**. Si crea una vacante nueva, abre esa vacante y usa **"Re-analizar CVs con esta vacante"** (analiza los CVs que todavía no se compararon con ella, de a 10 por vez); también existe **"Re-analizar CVs pendientes"** (o "Re-analizar este CV" para una sola persona).
 
 **Configuración** (todo en `src/lib/ia/config.ts`):
 - Modelo: `claude-haiku-5-5` (el más económico). Para probar uno más capaz, se cambia ese valor.
