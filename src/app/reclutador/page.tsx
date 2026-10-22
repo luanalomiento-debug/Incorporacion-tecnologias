@@ -2,6 +2,7 @@ import Link from "next/link";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { COLUMNAS_VACANTE, formatearFecha, type Vacante } from "@/lib/tipos";
 import { BotonEstadoVacante } from "@/components/BotonEstadoVacante";
+import { BotonReanalizar } from "@/components/reclutador/BotonReanalizar";
 import { BotonEliminarVacante } from "@/components/reclutador/BotonEliminarVacante";
 import { Icono } from "@/components/postulante/Icono";
 import { EtiquetaEstado } from "@/components/reclutador/EtiquetaEstado";
@@ -84,6 +85,7 @@ export default async function PanelReclutadorPage() {
                   <Link href={`/reclutador/vacantes/${v.id}/editar`} className={`${estilosReclutador.botonSecundario} !px-4 !py-2 text-sm`}>
                     Editar
                   </Link>
+                  {v.activa && <BotonReanalizar vacanteId={v.id} texto="Re-analizar CVs" grande />}
                   <BotonEliminarVacante id={v.id} titulo={v.titulo} postulaciones={cantidad} />
                 </div>
               </li>
