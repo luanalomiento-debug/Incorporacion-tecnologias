@@ -45,5 +45,5 @@ export async function exigirRol(rol: Rol): Promise<Perfil> {
 }
 
 export function inicioDelRol(rol: Rol) {
-  return rol === "reclutador" ? "/reclutador" : "/postulante";
+  return rol === "reclutador" ? "/reclutador/dashboard" : "/postulante";
 }

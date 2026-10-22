@@ -2,16 +2,19 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { reanalizarCv, reanalizarPendientes } from "@/lib/acciones/ia";
+import { reanalizarCv, reanalizarParaVacante, reanalizarPendientes } from "@/lib/acciones/ia";
 import { estilosReclutador } from "@/components/reclutador/estilos";
 
-// Sin `postulanteId`, re-analiza un lote de CVs pendientes; con él, el CV de esa persona.
+// Sin `postulanteId` ni `vacanteId`, re-analiza un lote de CVs pendientes; con `postulanteId`, el CV
+// de esa persona; con `vacanteId`, los CVs que todavía no se compararon con esa vacante.
 export function BotonReanalizar({
   postulanteId,
+  vacanteId,
   texto,
   claro = false,
 }: {
   postulanteId?: string;
+  vacanteId?: string;
   texto: string;
   claro?: boolean;
 }) {
@@ -22,7 +25,11 @@ export function BotonReanalizar({
   async function apretar() {
     setEnviando(true);
     setAviso("");
-    const resultado = postulanteId ? await reanalizarCv(postulanteId) : await reanalizarPendientes();
+    const resultado = vacanteId
+      ? await reanalizarParaVacante(vacanteId)
+      : postulanteId
+        ? await reanalizarCv(postulanteId)
+        : await reanalizarPendientes();
     setEnviando(false);
     setAviso(resultado.error ?? resultado.mensaje ?? "");
     router.refresh();
