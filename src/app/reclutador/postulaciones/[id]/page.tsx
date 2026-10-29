@@ -3,9 +3,9 @@ import { notFound } from "next/navigation";
 import { exigirRol } from "@/lib/auth";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { enlaceCorreo } from "@/lib/correo";
-import { nombreCompleto } from "@/lib/dashboard";
+import { cargarPostulaciones, nombreCompleto } from "@/lib/dashboard";
 import { datosEtapa, diasDesde, textoDias } from "@/lib/etapas";
-import type { MotivosAfinidad, PreguntaEntrevista } from "@/lib/ia/esquema";
+import type { PreguntaEntrevista } from "@/lib/ia/esquema";
 import { formatearFecha } from "@/lib/tipos";
 import { Icono } from "@/components/postulante/Icono";
 import { ActualizarSiAnalizando } from "@/components/reclutador/ActualizarSiAnalizando";
@@ -47,17 +47,14 @@ export default async function FichaCandidatoPage({ params }: PageProps<"/recluta
   const yo = await exigirRol("reclutador");
   const supabase = await crearClienteServidor();
 
-  const { data: p } = await supabase
-    .from("postulaciones")
-    .select(
-      "id, vacante_id, postulante_id, creado_en, afinidad, analisis, etapa, etapa_actualizada_en, vacante_sugerida_id, postulante:perfiles!postulaciones_postulante_id_fkey(nombre, apellido, email), vacante:vacantes!postulaciones_vacante_id_fkey(id, titulo, activa)",
-    )
-    .eq("id", id)
-    .maybeSingle();
+  const [p] = await cargarPostulaciones(supabase, undefined, [id]);
   if (!p) notFound();
-
-  const postulante = p.postulante as unknown as { nombre: string; apellido: string; email: string } | null;
-  const vacante = p.vacante as unknown as { id: string; titulo: string; activa: boolean } | null;
+  const postulante = p.postulante;
+  const { data: vacante } = await supabase
+    .from("vacantes")
+    .select("id, titulo, activa")
+    .eq("id", p.vacante_id)
+    .maybeSingle<{ id: string; titulo: string; activa: boolean }>();
 
   const [{ data: cv }, { data: notasDb }, { data: movimientos }, { data: pregs }, { data: sugerida }] = await Promise.all([
     supabase
@@ -82,7 +79,7 @@ export default async function FichaCandidatoPage({ params }: PageProps<"/recluta
   ]);
 
   const perfilCv = (cv?.perfil_estructurado ?? null) as PerfilCv;
-  const analisis = p.analisis as MotivosAfinidad | null;
+  const analisis = p.analisis;
   const preguntas = (pregs?.preguntas ?? []) as PreguntaEntrevista[];
   const notas = (notasDb ?? []).map((n) => {
     const autor = n.autor as unknown as { nombre: string; apellido: string } | null;
@@ -95,7 +92,7 @@ export default async function FichaCandidatoPage({ params }: PageProps<"/recluta
     };
   });
   const nombre = nombreCompleto(postulante);
-  const dias = diasDesde(p.etapa_actualizada_en as string);
+  const dias = diasDesde(p.etapa_actualizada_en);
 
   return (
     <div className="space-y-6">
@@ -117,7 +114,7 @@ export default async function FichaCandidatoPage({ params }: PageProps<"/recluta
               <Link href={`/reclutador/vacantes/${p.vacante_id}`} className="font-semibold text-blue-700 hover:underline">
                 {vacante?.titulo ?? "—"}
               </Link>{" "}
-              el {formatearFecha(p.creado_en as string)}
+              el {formatearFecha(p.creado_en)}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -135,9 +132,9 @@ export default async function FichaCandidatoPage({ params }: PageProps<"/recluta
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-x-6 gap-y-3 border-t border-slate-100 pt-4">
-          <SelectorEtapa postulacionId={id} etapa={p.etapa as string} />
+          <SelectorEtapa postulacionId={id} etapa={p.etapa} />
           <p className="text-sm text-slate-500">
-            En «{datosEtapa(p.etapa as string).texto}» {textoDias(dias)}
+            En «{datosEtapa(p.etapa).texto}» {textoDias(dias)}
           </p>
           {p.afinidad !== null && <MedidorAfinidad valor={Number(p.afinidad)} />}
         </div>
@@ -148,7 +145,7 @@ export default async function FichaCandidatoPage({ params }: PageProps<"/recluta
           <section className={`${estilosReclutador.tarjeta} space-y-4`}>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="font-bold text-marca">Análisis de la IA para este puesto</h2>
-              <BotonReanalizar postulanteId={p.postulante_id as string} texto={p.afinidad === null ? "Analizar este CV" : "Re-analizar este CV"} />
+              <BotonReanalizar postulanteId={p.postulante_id} texto={p.afinidad === null ? "Analizar este CV" : "Re-analizar este CV"} />
             </div>
             {cv?.resumen && <p className="text-sm text-slate-700">{cv.resumen}</p>}
             {analisis ? (
@@ -238,7 +235,7 @@ export default async function FichaCandidatoPage({ params }: PageProps<"/recluta
                   <span className="text-xs text-slate-500">{formatearFecha(m.creado_en as string)}</span>
                 </li>
               ))}
-              <li className="text-xs text-slate-500">Se postuló el {formatearFecha(p.creado_en as string)}</li>
+              <li className="text-xs text-slate-500">Se postuló el {formatearFecha(p.creado_en)}</li>
             </ul>
           </section>
         </div>

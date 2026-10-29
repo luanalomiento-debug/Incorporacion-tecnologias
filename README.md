@@ -79,6 +79,8 @@ Necesitás [Node.js](https://nodejs.org) (versión LTS) y tener el proyecto desc
    6. `20261015120000_analisis_ia.sql` (análisis con IA: estado de cada CV, motivos de las sugerencias y tope diario)
    7. `20261022120000_eliminar_vacantes.sql` (permite eliminar vacantes; las borra junto con sus postulaciones)
    8. `20261029120000_seguimiento.sql` (etapas del proceso, historial de cambios, notas y preguntas de entrevista; no borra ni cambia datos existentes: todas las postulaciones actuales quedan en la etapa «Nuevo»). **Correla antes de publicar esta versión de la app.**
+   9. `20261105120000_optimizacion_modelo.sql` (optimización del modelo de datos: reglas de integridad, índices, fechas de vacantes, trazabilidad de la IA). No borra nada. **Antes**, correr una vez `supabase/scripts/respaldo_antes_de_optimizar.sql` (copia de seguridad dentro de Supabase). El análisis completo está en `docs/base-de-datos.md`.
+   10. `20261112120000_resultados_ia_una_sola_fuente.sql` (los resultados de IA quedan en una sola tabla, `afinidades_cv_vacante`, que solo lee la reclutadora). **Publicá la app inmediatamente después de correrla.**
 
    Cada una tiene que terminar con "Success". No hace falta crear el bucket a mano: la tercera migración lo crea.
 3. **Desactivá la confirmación de email (solo para desarrollo).** En **Authentication → Sign In / Providers → Email**, desactivá "Confirm email". Si está activada, quien se registre tendrá que confirmar su correo antes de poder entrar.
@@ -139,6 +141,12 @@ Las cuentas de reclutador se crean a mano. Hay dos formas; la más simple es con
    |---|---|
    | `ANTHROPIC_API_KEY` | la clave de la API de Anthropic (`sk-ant-...`) |
    | `SUPABASE_SECRET_KEY` | la clave secreta de Supabase (`sb_secret_...`) |
+
+   Y esta tercera, también **Sensitive**, para la **limpieza diaria automática** (borra los CV huérfanos del almacenamiento y los registros viejos de análisis; está en `vercel.json`):
+
+   | Key | Value |
+   |---|---|
+   | `CRON_SECRET` | una contraseña larga y aleatoria que inventás vos (por ejemplo, 32 caracteres) |
 4. Apretá **Deploy** y esperá a ver **Ready**. Vercel te da una dirección que termina en `.vercel.app`.
 5. Agregá esa dirección en Supabase, en **Authentication → URL Configuration → Site URL**.
 6. Vercel publica la rama que figure como **Production Branch** (en **Settings → Environments → Production → Branch Tracking**). A partir de ahí, cada `git push` a esa rama redespliega solo.

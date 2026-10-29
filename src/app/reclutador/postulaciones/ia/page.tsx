@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { crearClienteServidor } from "@/lib/supabase/server";
-import { cargarEstadosCv, cargarPostulaciones, nombreCompleto, type Postulante } from "@/lib/dashboard";
+import { cargarEstadosCv, cargarPostulaciones, nombreCompleto, traerTodo, type Postulante } from "@/lib/dashboard";
 import { AFINIDAD_MINIMA_LISTA, MAX_CANDIDATOS_POR_PUESTO } from "@/lib/ia/config";
 import type { MotivosAfinidad } from "@/lib/ia/esquema";
 import { COLUMNAS_VACANTE, type Vacante } from "@/lib/tipos";
@@ -32,19 +32,24 @@ function Pendiente({ texto = "Pendiente de análisis" }: { texto?: string }) {
 // comparándolo con todas las vacantes abiertas en ese momento.
 export default async function DashboardIaPage() {
   const supabase = await crearClienteServidor();
-  const [{ data: dataVacantes }, { data: dataSugeridos }, postulaciones, estadosCv] = await Promise.all([
+  const [{ data: dataVacantes }, dataSugeridos, postulaciones, estadosCv] = await Promise.all([
     supabase.from("vacantes").select(COLUMNAS_VACANTE).order("creado_en", { ascending: false }),
-    supabase
-      .from("candidatos_sugeridos")
-      .select(
-        "id, vacante_id, postulante_id, afinidad, analisis, postulante:perfiles!candidatos_sugeridos_postulante_id_fkey(nombre, apellido, email)",
-      )
-      .order("afinidad", { ascending: false }),
+    traerTodo<Sugerido>(
+      (desde, hasta) =>
+        supabase
+          .from("afinidades_cv_vacante")
+          .select(
+            "id, vacante_id, postulante_id, afinidad, analisis, postulante:perfiles!afinidades_cv_vacante_postulante_id_fkey(nombre, apellido, email)",
+          )
+          .order("afinidad", { ascending: false })
+          .order("id")
+          .range(desde, hasta) as unknown as PromiseLike<{ data: Sugerido[] | null }>,
+    ),
     cargarPostulaciones(supabase),
     cargarEstadosCv(supabase),
   ]);
   const vacantes = (dataVacantes ?? []) as Vacante[];
-  const sugeridos = (dataSugeridos ?? []) as unknown as Sugerido[];
+  const sugeridos = dataSugeridos;
   const yaSePostulo = new Set(postulaciones.map((p) => `${p.vacante_id}|${p.postulante_id}`));
 
   const cuenta = { listo: 0, pendiente: 0, analizando: 0, error: 0 };
