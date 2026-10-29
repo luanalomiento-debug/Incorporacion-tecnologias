@@ -1,6 +1,7 @@
 import "server-only";
 import { crearClienteAdmin } from "@/lib/supabase/admin";
 import { pedirPreguntas } from "@/lib/ia/claude";
+import { MODELO_IA } from "@/lib/ia/config";
 
 // Genera y guarda las preguntas de entrevista de una postulación. Devuelve un mensaje de error
 // (sin datos del CV) o null si salió bien.
@@ -34,7 +35,7 @@ export async function generarPreguntasEntrevista(postulacionId: string): Promise
 
     const { error: errorGuardar } = await db
       .from("preguntas_entrevista")
-      .upsert({ postulacion_id: postulacionId, preguntas, generado_en: new Date().toISOString() });
+      .upsert({ postulacion_id: postulacionId, preguntas, modelo: MODELO_IA, generado_en: new Date().toISOString() });
     if (errorGuardar) return "No se pudieron guardar las preguntas.";
     return null;
   } catch (e) {

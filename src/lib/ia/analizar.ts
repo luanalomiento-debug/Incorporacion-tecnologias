@@ -7,6 +7,7 @@ import {
   CONCURRENCIA_REANALISIS,
   DIFERENCIA_PARA_SUGERIR,
   MAX_VACANTES_POR_ANALISIS,
+  MODELO_IA,
   TOPE_DIARIO_POR_PERSONA,
 } from "@/lib/ia/config";
 
@@ -137,6 +138,7 @@ export async function analizarCv(
           postulante_id: postulanteId,
           afinidad: limitarAfinidad(v.afinidad),
           analisis: motivos,
+          modelo: MODELO_IA,
         };
       });
 

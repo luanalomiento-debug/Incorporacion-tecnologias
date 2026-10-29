@@ -79,6 +79,7 @@ Necesitás [Node.js](https://nodejs.org) (versión LTS) y tener el proyecto desc
    6. `20261015120000_analisis_ia.sql` (análisis con IA: estado de cada CV, motivos de las sugerencias y tope diario)
    7. `20261022120000_eliminar_vacantes.sql` (permite eliminar vacantes; las borra junto con sus postulaciones)
    8. `20261029120000_seguimiento.sql` (etapas del proceso, historial de cambios, notas y preguntas de entrevista; no borra ni cambia datos existentes: todas las postulaciones actuales quedan en la etapa «Nuevo»). **Correla antes de publicar esta versión de la app.**
+   9. `20261105120000_optimizacion_modelo.sql` (optimización del modelo de datos: reglas de integridad, índices, fechas de vacantes, trazabilidad de la IA). No borra nada. **Antes**, correr una vez `supabase/scripts/respaldo_antes_de_optimizar.sql` (copia de seguridad dentro de Supabase). El análisis completo está en `docs/base-de-datos.md`.
 
    Cada una tiene que terminar con "Success". No hace falta crear el bucket a mano: la tercera migración lo crea.
 3. **Desactivá la confirmación de email (solo para desarrollo).** En **Authentication → Sign In / Providers → Email**, desactivá "Confirm email". Si está activada, quien se registre tendrá que confirmar su correo antes de poder entrar.
