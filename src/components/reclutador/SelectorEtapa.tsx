@@ -30,7 +30,7 @@ export function SelectorEtapa({ postulacionId, etapa, etiqueta = true }: { postu
           disabled={guardando}
           onChange={(e) => cambiar(e.target.value)}
           aria-label="Etapa del candidato"
-          className={`rounded-full border-0 py-1.5 pl-3 pr-8 text-xs font-semibold ring-1 ring-inset ring-slate-200 disabled:opacity-60 ${actual.clases}`}
+          className={`selector rounded-full border-0 py-1.5 pl-3 text-xs font-semibold ring-1 ring-inset ring-slate-200 disabled:opacity-60 ${actual.clases}`}
         >
           {ETAPAS.map((e) => (
             <option key={e.valor} value={e.valor}>

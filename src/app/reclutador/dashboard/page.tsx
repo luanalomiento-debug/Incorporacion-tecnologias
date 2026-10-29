@@ -147,7 +147,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/reclut
   const hayAlertas =
     sinRevisar.length + estancadas.length + vacantesSinPostulaciones.length > 0 || cvsConProblema > 0;
   const campo =
-    "rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200";
+    "selector rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200";
 
   return (
     <div className="space-y-6">
