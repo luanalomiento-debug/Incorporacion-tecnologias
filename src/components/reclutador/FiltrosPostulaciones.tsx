@@ -4,7 +4,7 @@ import { hayFiltros, type Filtros } from "@/lib/filtros";
 import { estilosReclutador } from "@/components/reclutador/estilos";
 
 const campo =
-  "rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200";
+  "selector rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200";
 
 // Búsqueda y filtros por nombre, etapa y afinidad mínima. Es un formulario GET: los filtros
 // quedan en la dirección de la página, así que se pueden compartir y no hace falta JavaScript.
