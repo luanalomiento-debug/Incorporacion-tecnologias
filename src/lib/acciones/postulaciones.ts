@@ -1,9 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { after } from "next/server";
 import { exigirRol } from "@/lib/auth";
-import { sincronizarPostulacionesSeguro } from "@/lib/ia/analizar";
 import { crearClienteServidor } from "@/lib/supabase/server";
 
 // Postula al usuario actual a una vacante. Las reglas importantes (vacante
@@ -28,11 +26,6 @@ export async function postularse(vacanteId: string): Promise<{ error?: string }>
     if (error.code === "23505") return { error: "Ya te postulaste a esta vacante." };
     return { error: "No se pudo enviar tu postulación. Puede que la vacante ya no esté disponible." };
   }
-
-  // Si el CV ya fue analizado, se copia a esta postulación la afinidad con esta vacante.
-  after(async () => {
-    await sincronizarPostulacionesSeguro(perfil.id);
-  });
 
   revalidatePath(`/postulante/vacantes/${vacanteId}`);
   revalidatePath("/postulante/mis-postulaciones");

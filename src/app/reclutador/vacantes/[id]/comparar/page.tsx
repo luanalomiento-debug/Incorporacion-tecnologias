@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { crearClienteServidor } from "@/lib/supabase/server";
-import { nombreCompleto, type PostulacionDashboard } from "@/lib/dashboard";
+import { cargarPostulaciones, nombreCompleto, type PostulacionDashboard } from "@/lib/dashboard";
 import type { MotivosAfinidad } from "@/lib/ia/esquema";
 import { Icono } from "@/components/postulante/Icono";
 import { EtiquetaEtapa } from "@/components/reclutador/EtiquetaEtapa";
@@ -56,14 +56,7 @@ export default async function CompararPage({
     );
   }
 
-  const { data } = await supabase
-    .from("postulaciones")
-    .select(
-      "id, vacante_id, postulante_id, creado_en, afinidad, analisis, etapa, etapa_actualizada_en, vacante_sugerida_id, postulante:perfiles!postulaciones_postulante_id_fkey(nombre, apellido, email)",
-    )
-    .eq("vacante_id", id)
-    .in("id", ids);
-  const elegidos = ((data ?? []) as unknown as PostulacionDashboard[]).sort(
+  const elegidos = (await cargarPostulaciones(supabase, id, ids)).sort(
     (a, b) => Number(b.afinidad ?? -1) - Number(a.afinidad ?? -1),
   );
   if (elegidos.length < 2) notFound();

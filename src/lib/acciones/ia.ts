@@ -5,6 +5,7 @@ import { after } from "next/server";
 import { exigirRol } from "@/lib/auth";
 import { analizarCv, analizarVarios } from "@/lib/ia/analizar";
 import { LOTE_REANALISIS, MINUTOS_ANALISIS_VENCIDO } from "@/lib/ia/config";
+import { traerTodo } from "@/lib/dashboard";
 import { crearClienteServidor } from "@/lib/supabase/server";
 
 type Resultado = { error?: string; mensaje?: string };
@@ -76,14 +77,18 @@ export async function reanalizarParaVacante(vacanteId: string): Promise<Resultad
   if (!vacante) return { error: "No se encontró la vacante." };
   if (!vacante.activa) return { error: "La vacante está desactivada: activala para que la IA la tenga en cuenta." };
 
-  const [{ data: cvs }, { data: comparados }] = await Promise.all([
-    supabase.from("cvs").select("postulante_id, analisis_estado, analisis_iniciado_en").limit(1000),
-    supabase.from("candidatos_sugeridos").select("postulante_id").eq("vacante_id", vacanteId).limit(1000),
+  const [cvs, comparados] = await Promise.all([
+    traerTodo<{ postulante_id: string; analisis_estado: string; analisis_iniciado_en: string | null }>((desde, hasta) =>
+      supabase.from("cvs").select("postulante_id, analisis_estado, analisis_iniciado_en").order("id").range(desde, hasta),
+    ),
+    traerTodo<{ postulante_id: string }>((desde, hasta) =>
+      supabase.from("afinidades_cv_vacante").select("postulante_id").eq("vacante_id", vacanteId).order("id").range(desde, hasta),
+    ),
   ]);
 
-  const yaComparados = new Set((comparados ?? []).map((c) => c.postulante_id as string));
+  const yaComparados = new Set(comparados.map((c) => c.postulante_id as string));
   const vencido = Date.now() - MINUTOS_ANALISIS_VENCIDO * 60 * 1000;
-  const elegibles = (cvs ?? []).filter(
+  const elegibles = cvs.filter(
     (c) =>
       !yaComparados.has(c.postulante_id as string) &&
       (c.analisis_estado !== "analizando" ||

@@ -3,9 +3,7 @@ import { crearClienteAdmin } from "@/lib/supabase/admin";
 import { pedirAnalisis, type VacanteParaIa } from "@/lib/ia/claude";
 import type { MotivosAfinidad } from "@/lib/ia/esquema";
 import {
-  AFINIDAD_MINIMA_SUGERENCIA,
   CONCURRENCIA_REANALISIS,
-  DIFERENCIA_PARA_SUGERIR,
   MAX_VACANTES_POR_ANALISIS,
   MODELO_IA,
   TOPE_DIARIO_POR_PERSONA,
@@ -24,36 +22,6 @@ function mensajeDe(error: unknown) {
 function limitarAfinidad(valor: number) {
   if (!Number.isFinite(valor)) return 0;
   return Math.min(100, Math.max(0, Math.round(valor)));
-}
-
-// Copia a cada postulación de la persona la afinidad y los motivos de SU vacante, y marca
-// otra vacante sugerida si le queda claramente mejor. Se llama al terminar un análisis
-// y cada vez que la persona se postula.
-export async function sincronizarPostulaciones(db: Admin, postulanteId: string) {
-  const [{ data: filas }, { data: postulaciones }] = await Promise.all([
-    db.from("candidatos_sugeridos").select("vacante_id, afinidad, analisis").eq("postulante_id", postulanteId),
-    db.from("postulaciones").select("id, vacante_id").eq("postulante_id", postulanteId),
-  ]);
-
-  for (const p of postulaciones ?? []) {
-    const propia = (filas ?? []).find((f) => f.vacante_id === p.vacante_id);
-    if (!propia) continue;
-
-    const mejorOtra = (filas ?? [])
-      .filter((f) => f.vacante_id !== p.vacante_id && f.afinidad !== null)
-      .sort((a, b) => Number(b.afinidad) - Number(a.afinidad))[0];
-    const sugerida =
-      mejorOtra &&
-      Number(mejorOtra.afinidad) >= AFINIDAD_MINIMA_SUGERENCIA &&
-      Number(mejorOtra.afinidad) - Number(propia.afinidad ?? 0) >= DIFERENCIA_PARA_SUGERIR
-        ? mejorOtra.vacante_id
-        : null;
-
-    await db
-      .from("postulaciones")
-      .update({ afinidad: propia.afinidad, analisis: propia.analisis, vacante_sugerida_id: sugerida })
-      .eq("id", p.id);
-  }
 }
 
 // Analiza el CV de una persona frente a TODAS las vacantes abiertas y guarda el resultado.
@@ -150,12 +118,21 @@ export async function analizarCv(
     });
     if (!guardado || guardado.length === 0) return { ok: false, motivo: "cv-reemplazado" };
 
-    await db.from("candidatos_sugeridos").delete().eq("postulante_id", postulanteId);
+    // Los resultados nuevos reemplazan a los anteriores de esta persona (sin dejar un momento sin datos):
+    // se guardan o actualizan los actuales y se quitan los de vacantes que ya no se compararon.
     if (filas.length > 0) {
-      const { error } = await db.from("candidatos_sugeridos").insert(filas);
-      if (error) throw new Error(`No se pudieron guardar los candidatos sugeridos: ${error.message}`);
+      const ahora = new Date().toISOString();
+      const { error } = await db
+        .from("afinidades_cv_vacante")
+        .upsert(
+          filas.map((f) => ({ ...f, creado_en: ahora })),
+          { onConflict: "vacante_id,postulante_id" },
+        );
+      if (error) throw new Error(`No se pudieron guardar las afinidades: ${error.message}`);
     }
-    await sincronizarPostulaciones(db, postulanteId);
+    let borrar = db.from("afinidades_cv_vacante").delete().eq("postulante_id", postulanteId);
+    if (filas.length > 0) borrar = borrar.not("vacante_id", "in", `(${filas.map((f) => f.vacante_id).join(",")})`);
+    await borrar;
     return { ok: true };
   } catch (e) {
     // Solo se anota el mensaje del error: nunca el contenido del CV.
@@ -178,13 +155,4 @@ export async function analizarVarios(postulanteIds: string[], origen: OrigenAnal
     }
   });
   await Promise.all(trabajadores);
-}
-
-// Para usar dentro de `after()`: copia la afinidad a una postulación nueva, sin lanzar errores.
-export async function sincronizarPostulacionesSeguro(postulanteId: string) {
-  try {
-    await sincronizarPostulaciones(crearClienteAdmin(), postulanteId);
-  } catch (e) {
-    console.error("No se pudo copiar la afinidad a la postulación:", mensajeDe(e));
-  }
 }

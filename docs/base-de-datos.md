@@ -142,12 +142,12 @@ erDiagram
 | H5 | `perfiles.email` es copia de `auth.users.email` y solo se copiaba al registrarse: si la cuenta cambia de email, quedan distintos. | Consistencia | Media | **Resuelto** (M5) |
 | H6 | Los resultados de IA se **reemplazan** en cada análisis y no guardan qué modelo los calculó: no hay trazabilidad (clave para auditar decisiones asistidas por IA en selección de personal). | Trazabilidad | Media | **Resuelto** (M6) |
 | H7 | El esquema no tenía documentación dentro de la base. | Mantenimiento | Baja | **Resuelto** (M7) |
-| H8 | **Duplicación de datos derivados:** `postulaciones.afinidad / analisis` son una copia de `candidatos_sugeridos` que el código sincroniza. Hay dos fuentes de verdad y riesgo de que diverjan. | Normalización | Alta | **Pendiente** (requiere aprobación, ver 6) |
-| H9 | **Exposición de datos internos al candidato:** como la afinidad, el análisis de IA y la etapa viven en `postulaciones` y el postulante puede leer sus propias filas, la API le permitiría ver su puntaje, la evaluación de la IA y si fue "descartado". La pantalla no lo muestra, pero la base sí lo permite. | Seguridad / privacidad | Alta | **Pendiente** (se resuelve junto con H8) |
-| H10 | **Nombre engañoso:** `candidatos_sugeridos` guarda la afinidad de *cada* CV con *cada* vacante abierta, incluidas aquellas a las que la persona sí se postuló; no son solo "sugeridos". | Claridad | Baja | **Pendiente** (junto con H8) |
-| H11 | Al borrar una cuenta (o su perfil) se borran sus datos en cascada, pero **el PDF queda en el bucket** `cvs` (archivo huérfano). | Privacidad / limpieza | Media | **Pendiente** |
-| H12 | `analisis_ia_intentos` crece sin límite (solo se usa la ventana de 24 h). | Mantenimiento | Baja | **Pendiente** |
-| H13 | El dashboard descarga todas las postulaciones y calcula los indicadores en la aplicación. Funciona con cientos de filas; con miles conviene calcular en SQL (vistas o funciones). | Escalabilidad | Baja hoy | **Pendiente** |
+| H8 | **Duplicación de datos derivados:** `postulaciones.afinidad / analisis` son una copia de `candidatos_sugeridos` que el código sincroniza. Hay dos fuentes de verdad y riesgo de que diverjan. | Normalización | Alta | **Resuelto** (M8) |
+| H9 | **Exposición de datos internos al candidato:** como la afinidad, el análisis de IA y la etapa viven en `postulaciones` y el postulante puede leer sus propias filas, la API le permitiría ver su puntaje, la evaluación de la IA y si fue "descartado". La pantalla no lo muestra, pero la base sí lo permite. | Seguridad / privacidad | Alta | **Resuelto** (M8): los resultados de IA ya no son legibles por el postulante. La etapa sí lo es, a propósito (es su propio estado en el proceso). |
+| H10 | **Nombre engañoso:** `candidatos_sugeridos` guarda la afinidad de *cada* CV con *cada* vacante abierta, incluidas aquellas a las que la persona sí se postuló; no son solo "sugeridos". | Claridad | Baja | **Resuelto** (M8) |
+| H11 | Al borrar una cuenta (o su perfil) se borran sus datos en cascada, pero **el PDF queda en el bucket** `cvs` (archivo huérfano). | Privacidad / limpieza | Media | **Resuelto** (M9) |
+| H12 | `analisis_ia_intentos` crece sin límite (solo se usa la ventana de 24 h). | Mantenimiento | Baja | **Resuelto** (M9) |
+| H13 | El dashboard descarga todas las postulaciones y calcula los indicadores en la aplicación. Funciona con cientos de filas; con miles conviene calcular en SQL (vistas o funciones). | Escalabilidad | Baja hoy | **Parcial** (M10): paginación hecha; cálculo en SQL diferido |
 
 ### Decisiones evaluadas y **no** cambiadas (a propósito)
 - **Etapas como tabla de catálogo en vez de `CHECK`:** no se justifica con 6 valores fijos que además definen el flujo de la app; una tabla agregaría un `JOIN` y un lugar más donde mantenerlas.
@@ -172,11 +172,19 @@ Todas son **aditivas o endurecen reglas que los datos actuales ya cumplen**. No 
 | M6 | `modelo` en `candidatos_sugeridos` y `preguntas_entrevista` (la app lo completa). | H6: sin trazabilidad. | Permite saber con qué modelo se calculó cada resultado y comparar modelos. Los resultados anteriores quedan con `NULL`. |
 | M7 | `COMMENT ON` en tablas y columnas clave. | H7: sin documentación en la base. | El significado de cada tabla/columna se ve desde Supabase y desde cualquier herramienta de diagramas. |
 
-**Cambio de código asociado:** `src/lib/ia/analizar.ts` y `src/lib/ia/preguntas.ts` guardan `modelo`. Ninguna consulta existente cambió (no se renombró ni borró nada).
+### Fase 2 (migración `20261112120000_resultados_ia_una_sola_fuente.sql`) y mantenimiento
+
+| Id | Cambio | Qué problema resolvía | Por qué es mejor |
+|---|---|---|---|
+| M8 | Los resultados de IA viven **solo** en `afinidades_cv_vacante` (antes `candidatos_sugeridos`). Se eliminan `postulaciones.afinidad`, `analisis` y `vacante_sugerida_id`. La "otra vacante sugerida" se **calcula al mostrarla** (`src/lib/ia/sugerencia.ts`) con las reglas de `config.ts`. Antes de eliminar las columnas, la migración copia a la tabla única cualquier afinidad que solo existiera en `postulaciones`. | H8, H9, H10: dos fuentes de verdad sincronizadas por código, el postulante podía leer su puntaje y evaluación, y un nombre engañoso. | Una sola fuente de verdad (se elimina el código de sincronización y la posibilidad de divergir). El postulante ya no puede leer resultados de IA (RLS de solo reclutador). La sugerencia nunca queda desactualizada ni apunta a una vacante ya cerrada. El nombre dice lo que contiene. |
+| M9 | Limpieza diaria `/api/limpieza` (Vercel Cron, protegida con `CRON_SECRET`): borra del bucket los PDF sin CV en la base (de más de 1 hora) y los intentos de IA de más de 30 días. | H11 (archivos huérfanos al borrar cuentas: SQL no puede borrar archivos de Storage) y H12 (tabla de intentos sin límite). | Cumple el derecho a eliminación de datos y evita crecimiento indefinido, sin extensiones adicionales de Postgres. |
+| M10 | Todas las cargas grandes (postulaciones, afinidades, movimientos, estados de CV) se piden **por páginas** (`traerTodo`). | H13: Supabase devuelve como máximo 1000 filas por consulta; con más, los indicadores habrían salido incompletos **sin ningún aviso**. | Corrección garantizada a cualquier volumen. El cálculo de indicadores directamente en SQL (vistas o funciones) se difiere: no hace falta hasta decenas de miles de postulaciones y duplicaría las reglas de `config.ts`. |
+
+**Cambio de código asociado (M6):** `src/lib/ia/analizar.ts` y `src/lib/ia/preguntas.ts` guardan `modelo`. Fase 2: ver tabla anterior (`cargarPostulaciones` lee de la tabla única y calcula la sugerencia; `analizar.ts` guarda con `upsert` y quita las vacantes que ya no se compararon, sin dejar un momento sin datos).
 
 ---
 
-## 4. MER optimizado
+## 4. MER optimizado (después de M1–M10)
 
 Los cambios respecto del original están marcados con **★**.
 
@@ -187,9 +195,8 @@ erDiagram
     PERFILES ||--o{ VACANTES : "crea"
     PERFILES ||--o{ POSTULACIONES : "se postula"
     VACANTES ||--o{ POSTULACIONES : "recibe"
-    VACANTES |o--o{ POSTULACIONES : "es sugerida en"
-    PERFILES ||--o{ CANDIDATOS_SUGERIDOS : "es analizado"
-    VACANTES ||--o{ CANDIDATOS_SUGERIDOS : "se compara con"
+    PERFILES ||--o{ AFINIDADES_CV_VACANTE : "es analizado ★"
+    VACANTES ||--o{ AFINIDADES_CV_VACANTE : "se compara con ★"
     PERFILES ||--o{ ANALISIS_IA_INTENTOS : "genera"
     POSTULACIONES ||--o{ POSTULACION_MOVIMIENTOS : "historial"
     POSTULACIONES ||--o{ NOTAS_POSTULACION : "tiene"
@@ -227,15 +234,12 @@ erDiagram
         timestamptz creado_en
         text etapa
         timestamptz etapa_actualizada_en
-        smallint afinidad "★ 0..100"
-        jsonb analisis "★ objeto"
-        uuid vacante_sugerida_id FK "★ ≠ vacante_id"
     }
-    CANDIDATOS_SUGERIDOS {
-        uuid id PK
+    AFINIDADES_CV_VACANTE {
+        uuid id PK "★ antes candidatos_sugeridos"
         uuid vacante_id FK
         uuid postulante_id FK
-        smallint afinidad "★ 0..100"
+        smallint afinidad "★ 0..100 · única fuente de verdad"
         jsonb analisis "★ objeto"
         text modelo "★ trazabilidad"
         timestamptz creado_en
@@ -247,7 +251,7 @@ erDiagram
         timestamptz generado_en
     }
 ```
-(`PERFILES`, `ANALISIS_IA_INTENTOS`, `POSTULACION_MOVIMIENTOS` y `NOTAS_POSTULACION` no cambian de columnas; sí cambian los índices de `POSTULACION_MOVIMIENTOS`.)
+(`PERFILES`, `ANALISIS_IA_INTENTOS`, `POSTULACION_MOVIMIENTOS` y `NOTAS_POSTULACION` no cambian de columnas; sí cambian los índices de `POSTULACION_MOVIMIENTOS`. `POSTULACIONES` quedó **solo con datos del proceso**: ya no tiene `afinidad`, `analisis` ni `vacante_sugerida_id`, y desaparece la relación "es sugerida en".)
 
 ---
 
@@ -257,10 +261,13 @@ erDiagram
 |---|---|---|
 | Rango de la afinidad | Solo lo exigía el código | `smallint` + `CHECK 0..100` en la base |
 | Reglas de negocio en la base | Estados y unicidad | + vacante sugerida distinta, ruta de CV propia, "listo" con fecha, forma de los JSON |
-| Índices | PK/UNIQUE + 4 simples | + 3 nuevos y 1 compuesto que reemplaza a uno simple |
+| Índices | PK/UNIQUE + 4 simples | + 2 nuevos y 1 compuesto que reemplaza a uno simple (y 1 parcial que luego desaparece con la Fase 2) |
 | Fechas de vacantes | Solo `creado_en` y `activa` | + `actualizado_en` y `cerrada_en` automáticos |
 | `perfiles.email` vs `auth.users` | Divergen si cambia el email | Sincronizados por disparador |
 | Trazabilidad de IA | Ninguna | `modelo` en cada resultado |
+| Resultados de IA | Duplicados en 2 tablas, legibles por el postulante | Una sola tabla (`afinidades_cv_vacante`), solo reclutador |
+| Archivos de CV de cuentas borradas | Quedaban en el bucket | Limpieza diaria automática |
+| Cargas grandes | Truncadas silenciosamente a 1000 filas | Paginadas |
 | Documentación en la base | Ninguna | `COMMENT ON` en tablas y columnas clave |
 | Tablas / columnas borradas | — | **Ninguna** |
 
@@ -280,15 +287,11 @@ erDiagram
 
 ---
 
-## 6. Mejoras propuestas que quedan **pendientes de aprobación**
+## 6. Pendiente (decisiones conscientes)
 
-**Fase 2 (H8 + H9 + H10): una sola fuente de verdad para los resultados de IA.**
-Hoy: `candidatos_sugeridos` (matriz CV × vacante) **y** una copia en `postulaciones`.
-Propuesta: dejar los resultados de IA solamente en una tabla (renombrada `afinidades_cv_vacante`, con RLS de solo reclutador) y que `postulaciones` conserve únicamente datos transaccionales (vacante, persona, etapa, fechas).
-- *Ventajas:* se elimina la duplicación y el código de sincronización; el postulante deja de poder leer su puntaje y la evaluación (H9); el nombre refleja el contenido.
-- *Costo y riesgo:* toca el esquema y **muchas consultas del código** (dashboard, lista, ficha, comparador, recomendaciones). Se haría con el patrón *expandir → migrar → contraer*: (1) crear la estructura nueva y llenarla desde los datos actuales, (2) cambiar el código para leer de ahí, (3) recién entonces quitar las columnas viejas. Requiere ensayo en un entorno de prueba y un respaldo previo. **No se aplica sin tu aprobación.**
-
-**Otras:** H11 (borrar el PDF del bucket al eliminar una cuenta: requiere una tarea en el servidor, porque SQL no borra archivos de Storage), H12 (limpiar intentos de IA de más de 30 días) y H13 (calcular indicadores con vistas SQL cuando el volumen lo justifique).
+- **Cálculo de indicadores directamente en SQL (vistas / funciones).** Hoy se calculan en la aplicación sobre las filas traídas por páginas. Es correcto a cualquier volumen; solo se volvería lento con decenas de miles de postulaciones. Se difiere para no duplicar en SQL los umbrales de `config.ts`.
+- **Motivo de descarte.** No se registra (ver tabla de indicadores). Solo conviene agregarlo si el negocio lo va a usar.
+- **La etapa es legible por el propio postulante** (incluye "descartado"). Es una decisión de producto: su estado es suyo y permitiría un futuro seguimiento de su candidatura. Si se prefiere ocultarla, habría que moverla a otra tabla.
 
 ---
 
@@ -301,20 +304,24 @@ Entorno de prueba: PostgreSQL 16 con las 8 migraciones anteriores + datos de eje
 - **Disparadores:** al desactivar una vacante se carga `cerrada_en`; al reactivarla vuelve a nulo; al editar avanza `actualizado_en`; al cambiar el email en `auth.users` el perfil se actualiza.
 - **Seguridad (RLS y permisos):** el postulante **no** puede modificar `cerrada_en`, `activa`, `etapa`; no ve notas ni resultados sugeridos; `anon` no accede a nada. Sin cambios respecto de antes.
 - **Compatibilidad:** el borrado de vacantes sigue en cascada (postulaciones y sugeridos) y deja en `NULL` las vacantes sugeridas. La aplicación no cambia ninguna consulta existente; solo agrega `modelo` al guardar resultados. Comprobaciones de la aplicación: `tsc`, `eslint` y `next build` sin errores, y las pruebas de navegador y de IA pasan.
+- **Fase 2 sobre datos existentes:** la tabla se renombra y las restricciones, el índice y la política conservan su sentido (se verificó el listado completo); una afinidad que solo estaba en `postulaciones` se copió a la tabla única antes de eliminar las columnas; el respaldo sigue conteniendo los valores originales. El postulante lee **0** resultados de IA, el reclutador los ve, `anon` no accede y borrar una vacante sigue eliminando sus resultados en cascada.
+- **Pruebas de la aplicación con la estructura nueva:** 17 comprobaciones de la Fase 2 (ficha, listas, recomendaciones, comparador, análisis con `upsert` y `modelo`, postulación sin copia) y 7 de la limpieza (borra el PDF huérfano y los intentos viejos; no toca los PDF con CV ni los recién subidos; rechaza llamadas sin el secreto), más las 37 de navegación.
 - **Respaldo y vuelta atrás:** `supabase/scripts/respaldo_antes_de_optimizar.sql` copia las 9 tablas a un esquema `respaldo` (no expuesto por la API). Como la migración es una sola transacción, un error no deja cambios a medias.
 
 ## 8. Qué se aplicó y qué no
 
 | Elemento | Estado |
 |---|---|
-| Migración `20261105120000_optimizacion_modelo.sql` | **Preparada y validada en prueba. Aplicación en Supabase: a cargo de la persona responsable, después del respaldo.** |
-| Respaldo `respaldo_antes_de_optimizar.sql` | Preparado y validado. Se corre antes de la migración. |
-| Código (`modelo` en IA) | Hecho; se publica **después** de correr la migración. |
-| Fase 2 (H8–H10) y H11–H13 | Pendientes de aprobación / decisión. |
+| Inspección del esquema real (`inspeccionar_esquema.sql`) | **Ejecutada en Supabase**: las 57 columnas y 31 restricciones coinciden con las migraciones. Índices, políticas, disparadores y RLS: pendientes de confirmar (el editor corta a 100 filas). |
+| Respaldo `respaldo_antes_de_optimizar.sql` | Preparado y validado. Se corre antes de las migraciones. |
+| Migración `20261105120000_optimizacion_modelo.sql` | Preparada y validada en prueba. **Aplicación en Supabase pendiente.** |
+| Migración `20261112120000_resultados_ia_una_sola_fuente.sql` | Preparada y validada en prueba. **Aplicación en Supabase pendiente.** Se publica la app inmediatamente después (la versión anterior usa columnas que esta elimina). |
+| Código (tabla única, `modelo`, paginación, limpieza) | Hecho y probado; se publica después de correr las migraciones. |
+| `vercel.json` + variable `CRON_SECRET` | Hecho en el repositorio; falta cargar `CRON_SECRET` en Vercel. |
 
 ## 9. Verificación contra la base desplegada
 
-La reconstrucción parte de las migraciones. Para confirmar que la base real de Supabase **coincide**, ejecutar en el *SQL Editor* la consulta de solo lectura `supabase/scripts/inspeccionar_esquema.sql` y comparar el resultado con la sección 1 (columnas, restricciones, índices y políticas).
+La reconstrucción parte de las migraciones. Para confirmar que la base real de Supabase **coincide**, ejecutar en el *SQL Editor* la consulta de solo lectura `supabase/scripts/inspeccionar_esquema.sql` y comparar el resultado con la sección 1 (columnas, restricciones, índices y políticas). Resultado de la primera pasada: columnas y restricciones **idénticas** a las migraciones.
 
 ## 10. Preguntas que puede hacer el profesor
 

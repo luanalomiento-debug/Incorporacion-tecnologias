@@ -10,17 +10,23 @@ export async function generarPreguntasEntrevista(postulacionId: string): Promise
     const db = crearClienteAdmin();
     const { data: postulacion } = await db
       .from("postulaciones")
-      .select("id, vacante_id, postulante_id, analisis")
+      .select("id, vacante_id, postulante_id")
       .eq("id", postulacionId)
       .maybeSingle();
     if (!postulacion) return "No se encontró la postulación.";
 
-    const [{ data: cv }, { data: vacante }] = await Promise.all([
+    const [{ data: cv }, { data: vacante }, { data: afinidad }] = await Promise.all([
       db.from("cvs").select("ruta_archivo").eq("postulante_id", postulacion.postulante_id).maybeSingle(),
       db
         .from("vacantes")
         .select("id, titulo, descripcion, requisitos, habilidades, informacion_adicional")
         .eq("id", postulacion.vacante_id)
+        .maybeSingle(),
+      db
+        .from("afinidades_cv_vacante")
+        .select("analisis")
+        .eq("vacante_id", postulacion.vacante_id)
+        .eq("postulante_id", postulacion.postulante_id)
         .maybeSingle(),
     ]);
     if (!cv || !vacante) return "No se encontró el CV o la vacante.";
@@ -29,7 +35,7 @@ export async function generarPreguntasEntrevista(postulacionId: string): Promise
     if (error || !archivo) return "No se pudo leer el CV.";
     const pdfBase64 = Buffer.from(await archivo.arrayBuffer()).toString("base64");
 
-    const previo = postulacion.analisis ? JSON.stringify(postulacion.analisis) : "";
+    const previo = afinidad?.analisis ? JSON.stringify(afinidad.analisis) : "";
     const preguntas = await pedirPreguntas(pdfBase64, vacante, previo);
     if (preguntas.length === 0) return "La IA no devolvió preguntas. Probá de nuevo.";
 

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { crearClienteServidor } from "@/lib/supabase/server";
-import { agruparPorVacante, cargarEstadosCv, cargarPostulaciones, nombreCompleto, resumenAfinidad } from "@/lib/dashboard";
+import { agruparPorVacante, cargarEstadosCv, cargarPostulaciones, nombreCompleto, resumenAfinidad, traerTodo } from "@/lib/dashboard";
 import {
   DIAS_ESTANCADA,
   DIAS_SIN_REVISAR,
@@ -37,15 +37,24 @@ function unico(v: string | string[] | undefined) {
 export default async function DashboardPage({ searchParams }: PageProps<"/reclutador/dashboard">) {
   const params = await searchParams;
   const supabase = await crearClienteServidor();
-  const [{ data: dataVacantes }, todas, { data: dataCandidatos }, estadosCv, { data: dataMov }] = await Promise.all([
+  const [{ data: dataVacantes }, todas, dataCandidatos, estadosCv, dataMov] = await Promise.all([
     supabase.from("vacantes").select(COLUMNAS_VACANTE).order("creado_en", { ascending: false }),
     cargarPostulaciones(supabase),
-    supabase.from("candidatos_sugeridos").select("vacante_id, postulante_id, afinidad"),
+    traerTodo<{ vacante_id: string; postulante_id: string; afinidad: number | null }>((desde, hasta) =>
+      supabase.from("afinidades_cv_vacante").select("vacante_id, postulante_id, afinidad").order("id").range(desde, hasta),
+    ),
     cargarEstadosCv(supabase),
-    supabase.from("postulacion_movimientos").select("postulacion_id, creado_en").order("creado_en", { ascending: true }),
+    traerTodo<{ postulacion_id: string; creado_en: string }>((desde, hasta) =>
+      supabase
+        .from("postulacion_movimientos")
+        .select("postulacion_id, creado_en")
+        .order("creado_en", { ascending: true })
+        .order("id")
+        .range(desde, hasta),
+    ),
   ]);
   const vacantes = (dataVacantes ?? []) as Vacante[];
-  const candidatos = (dataCandidatos ?? []) as { vacante_id: string; postulante_id: string; afinidad: number | null }[];
+  const candidatos = dataCandidatos;
 
   // --- Filtros (vacante y período)
   const vacanteFiltro = vacantes.find((v) => v.id === unico(params.vacante)) ?? null;
@@ -100,7 +109,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/reclut
   const enProceso = enPeriodo.filter((p) => ETAPAS_EN_CURSO.includes(p.etapa)).length;
   const contratados = enPeriodo.filter((p) => p.etapa === "contratado").length;
   const primerMovimiento = new Map<string, string>();
-  for (const m of dataMov ?? []) if (!primerMovimiento.has(m.postulacion_id as string)) primerMovimiento.set(m.postulacion_id as string, m.creado_en as string);
+  for (const m of dataMov) if (!primerMovimiento.has(m.postulacion_id as string)) primerMovimiento.set(m.postulacion_id as string, m.creado_en as string);
   const tiempos = enPeriodo
     .filter((p) => primerMovimiento.has(p.id))
     .map((p) => (new Date(primerMovimiento.get(p.id)!).getTime() - new Date(p.creado_en).getTime()) / MS_DIA);
