@@ -1,3 +1,4 @@
+import type { Etapa } from "@/lib/etapas";
 import { MINUTOS_ANALISIS_VENCIDO } from "@/lib/ia/config";
 import type { MotivosAfinidad } from "@/lib/ia/esquema";
 import { crearClienteServidor } from "@/lib/supabase/server";
@@ -14,6 +15,8 @@ export type PostulacionDashboard = {
   afinidad: number | null;
   analisis: MotivosAfinidad | null;
   vacante_sugerida_id: string | null;
+  etapa: Etapa;
+  etapa_actualizada_en: string;
   postulante: Postulante;
 };
 
@@ -26,7 +29,7 @@ export async function cargarPostulaciones(supabase: Cliente, vacanteId?: string)
   let consulta = supabase
     .from("postulaciones")
     .select(
-      "id, vacante_id, postulante_id, creado_en, afinidad, analisis, vacante_sugerida_id, postulante:perfiles!postulaciones_postulante_id_fkey(nombre, apellido, email)",
+      "id, vacante_id, postulante_id, creado_en, afinidad, analisis, vacante_sugerida_id, etapa, etapa_actualizada_en, postulante:perfiles!postulaciones_postulante_id_fkey(nombre, apellido, email)",
     )
     .order("creado_en", { ascending: false });
   if (vacanteId) consulta = consulta.eq("vacante_id", vacanteId);

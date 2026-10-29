@@ -3,7 +3,8 @@ import { formatearFecha } from "@/lib/tipos";
 import { nombreCompleto, type EstadoCv, type PostulacionDashboard } from "@/lib/dashboard";
 import { Icono } from "@/components/postulante/Icono";
 import { EstadoAnalisis, MedidorAfinidad, MotivosDeAfinidad } from "@/components/reclutador/Afinidad";
-import { BotonReanalizar } from "@/components/reclutador/BotonReanalizar";
+import { SelectorEtapa } from "@/components/reclutador/SelectorEtapa";
+import Link from "next/link";
 import { estilosReclutador } from "@/components/reclutador/estilos";
 
 // Postulantes de una vacante, con acceso al CV y los campos de IA (todavía vacíos).
@@ -12,12 +13,15 @@ export function ListaPostulantes({
   titulosVacantes,
   estadosCv,
   mejorId,
+  seleccionable = false,
 }: {
   postulaciones: PostulacionDashboard[];
   titulosVacantes: Map<string, string>;
   estadosCv: Map<string, EstadoCv>;
   // Id de la postulación con mejor match de esta lista (se marca con una etiqueta).
   mejorId?: string | null;
+  // Muestra una casilla «Comparar» en cada fila (la usa el formulario que envuelve la lista).
+  seleccionable?: boolean;
 }) {
   return (
     <ul className="divide-y divide-slate-100">
@@ -34,6 +38,15 @@ export function ListaPostulantes({
           <li key={p.id} className="space-y-3 py-4 first:pt-0 last:pb-0">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex min-w-0 items-center gap-3">
+                {seleccionable && (
+                  <input
+                    type="checkbox"
+                    name="ids"
+                    value={p.id}
+                    aria-label={`Comparar a ${nombre}`}
+                    className="h-4 w-4 shrink-0 rounded border-slate-300"
+                  />
+                )}
                 <span
                   aria-hidden
                   className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-acento text-sm font-bold text-white"
@@ -54,6 +67,9 @@ export function ListaPostulantes({
                 </div>
               </div>
               <div className="flex flex-wrap gap-2">
+                <Link href={`/reclutador/postulaciones/${p.id}`} className={`${estilosReclutador.boton} !px-4 !py-2 text-sm`}>
+                  Ver ficha
+                </Link>
                 {p.postulante && (
                   <a
                     href={enlaceCorreo({
@@ -87,21 +103,17 @@ export function ListaPostulantes({
                       <dd>{p.afinidad === null ? <EstadoAnalisis estado={estado} /> : <MedidorAfinidad valor={Number(p.afinidad)} />}</dd>
                     </div>
                     <div>
-                      <dt className="mb-1 font-medium text-slate-500">Otra vacante sugerida</dt>
+                      <dt className="mb-1 font-medium text-slate-500">Etapa del proceso</dt>
                       <dd>
-                        {sugerida ? (
-                          <span className="font-semibold text-marca">{sugerida}</span>
-                        ) : p.afinidad === null ? (
-                          <span className="text-slate-400">Pendiente de análisis</span>
-                        ) : (
-                          <span className="text-slate-600">Ninguna: este puesto es de los que mejor encajan</span>
-                        )}
+                        <SelectorEtapa postulacionId={p.id} etapa={p.etapa} etiqueta={false} />
                       </dd>
                     </div>
                   </dl>
                   {p.analisis && <MotivosDeAfinidad motivos={p.analisis} />}
-                  {estado !== "analizando" && (
-                    <BotonReanalizar postulanteId={p.postulante_id} texto={p.afinidad === null ? "Analizar este CV" : "Re-analizar este CV"} />
+                  {sugerida && (
+                    <p className="text-slate-600">
+                      La IA sugiere otra vacante para esta persona: <strong className="text-marca">{sugerida}</strong>
+                    </p>
                   )}
                 </div>
               );

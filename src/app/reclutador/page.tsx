@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { crearClienteServidor } from "@/lib/supabase/server";
+import { DIAS_SIN_REVISAR, diasDesde } from "@/lib/etapas";
 import { COLUMNAS_VACANTE, formatearFecha, type Vacante } from "@/lib/tipos";
 import { BotonEstadoVacante } from "@/components/BotonEstadoVacante";
 import { BotonReanalizar } from "@/components/reclutador/BotonReanalizar";
@@ -12,12 +13,15 @@ export default async function PanelReclutadorPage() {
   const supabase = await crearClienteServidor();
   const [{ data }, { data: postulaciones }] = await Promise.all([
     supabase.from("vacantes").select(COLUMNAS_VACANTE).order("creado_en", { ascending: false }),
-    supabase.from("postulaciones").select("vacante_id"),
+    supabase.from("postulaciones").select("vacante_id, etapa, creado_en"),
   ]);
   const vacantes = (data ?? []) as Vacante[];
   const cantidades = new Map<string, number>();
+  const sinRevisar = new Map<string, number>();
   for (const p of postulaciones ?? []) {
     cantidades.set(p.vacante_id, (cantidades.get(p.vacante_id) ?? 0) + 1);
+    if (p.etapa === "nuevo" && diasDesde(p.creado_en) >= DIAS_SIN_REVISAR)
+      sinRevisar.set(p.vacante_id, (sinRevisar.get(p.vacante_id) ?? 0) + 1);
   }
 
   return (
@@ -70,6 +74,11 @@ export default async function PanelReclutadorPage() {
                       <p className="mt-1 text-sm text-slate-500">
                         Creada el {formatearFecha(v.creado_en)} · {cantidad}{" "}
                         {cantidad === 1 ? "postulación" : "postulaciones"}
+                        {(sinRevisar.get(v.id) ?? 0) > 0 && (
+                          <span className="ml-2 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-800">
+                            {sinRevisar.get(v.id)} sin revisar
+                          </span>
+                        )}
                       </p>
                     </div>
                   </div>
