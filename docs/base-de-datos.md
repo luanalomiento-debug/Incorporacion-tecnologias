@@ -312,7 +312,7 @@ Entorno de prueba: PostgreSQL 16 con las 8 migraciones anteriores + datos de eje
 
 | Elemento | Estado |
 |---|---|
-| Inspección del esquema real (`inspeccionar_esquema.sql`) | **Ejecutada en Supabase**: las 57 columnas y 31 restricciones coinciden con las migraciones. Índices, políticas, disparadores y RLS: pendientes de confirmar (el editor corta a 100 filas). |
+| Inspección del esquema real (`inspeccionar_esquema.sql`) | **Ejecutada en Supabase (2 pasadas, porque el editor corta a 100 filas)**: coinciden con las migraciones las 57 columnas, las 31 restricciones, los 17 índices, las 18 políticas, los 3 disparadores (incluido `al_crear_usuario` sobre `auth.users`) y el RLS activado en las 9 tablas. |
 | Respaldo `respaldo_antes_de_optimizar.sql` | Preparado y validado. Se corre antes de las migraciones. |
 | Migración `20261105120000_optimizacion_modelo.sql` | Preparada y validada en prueba. **Aplicación en Supabase pendiente.** |
 | Migración `20261112120000_resultados_ia_una_sola_fuente.sql` | Preparada y validada en prueba. **Aplicación en Supabase pendiente.** Se publica la app inmediatamente después (la versión anterior usa columnas que esta elimina). |
@@ -321,7 +321,7 @@ Entorno de prueba: PostgreSQL 16 con las 8 migraciones anteriores + datos de eje
 
 ## 9. Verificación contra la base desplegada
 
-La reconstrucción parte de las migraciones. Para confirmar que la base real de Supabase **coincide**, ejecutar en el *SQL Editor* la consulta de solo lectura `supabase/scripts/inspeccionar_esquema.sql` y comparar el resultado con la sección 1 (columnas, restricciones, índices y políticas). Resultado de la primera pasada: columnas y restricciones **idénticas** a las migraciones.
+La reconstrucción parte de las migraciones. Para confirmar que la base real de Supabase **coincide**, ejecutar en el *SQL Editor* la consulta de solo lectura `supabase/scripts/inspeccionar_esquema.sql` y comparar el resultado con la sección 1 (columnas, restricciones, índices y políticas). Resultado: la base desplegada es **idéntica** a la reconstruida desde las migraciones (columnas, restricciones, índices, políticas, disparadores y RLS).
 
 ## 10. Preguntas que puede hacer el profesor
 
