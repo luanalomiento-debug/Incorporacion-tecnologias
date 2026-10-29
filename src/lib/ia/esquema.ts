@@ -22,6 +22,7 @@ export const EsquemaAnalisis = z.object({
       vacante_id: z.string(),
       afinidad: z.number(),
       coincide: z.array(z.string()),
+      inferido: z.array(z.string()),
       falta: z.array(z.string()),
       conclusion: z.string(),
     }),
@@ -31,8 +32,24 @@ export const EsquemaAnalisis = z.object({
 export type ResultadoAnalisis = z.infer<typeof EsquemaAnalisis>;
 
 // Motivos de una afinidad, tal como se guardan y se muestran.
+// "coincide" es lo que el CV dice de forma explícita; "inferido" lo que se deduce y conviene
+// confirmar; "falta" lo que el puesto pide y no figura en el CV. Los análisis anteriores no
+// tienen "inferido".
 export type MotivosAfinidad = {
   coincide: string[];
+  inferido?: string[];
   falta: string[];
   conclusion: string;
 };
+
+// Preguntas de entrevista para una persona y un puesto.
+export const EsquemaPreguntas = z.object({
+  preguntas: z.array(
+    z.object({
+      pregunta: z.string(),
+      para_verificar: z.string(),
+    }),
+  ),
+});
+
+export type PreguntaEntrevista = z.infer<typeof EsquemaPreguntas>["preguntas"][number];

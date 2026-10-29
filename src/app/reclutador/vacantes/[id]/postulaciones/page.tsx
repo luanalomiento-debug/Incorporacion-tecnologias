@@ -2,9 +2,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { cargarEstadosCv, cargarPostulaciones, nombreCompleto, ordenarPorAfinidad, resumenAfinidad } from "@/lib/dashboard";
+import { ETAPAS } from "@/lib/etapas";
+import { aplicarFiltros, hayFiltros, leerFiltros } from "@/lib/filtros";
 import { COLUMNAS_VACANTE, type Vacante } from "@/lib/tipos";
 import { Icono } from "@/components/postulante/Icono";
 import { ActualizarSiAnalizando } from "@/components/reclutador/ActualizarSiAnalizando";
+import { FiltrosPostulaciones } from "@/components/reclutador/FiltrosPostulaciones";
 import { EtiquetaEstado } from "@/components/reclutador/EtiquetaEstado";
 import { ListaPostulantes } from "@/components/reclutador/ListaPostulantes";
 import { TarjetaDato } from "@/components/reclutador/TarjetaDato";
@@ -16,8 +19,10 @@ export const maxDuration = 60;
 // Dashboard de una sola vacante: solo las postulaciones a ese puesto.
 export default async function PostulacionesVacantePage({
   params,
+  searchParams,
 }: PageProps<"/reclutador/vacantes/[id]/postulaciones">) {
   const { id } = await params;
+  const filtros = leerFiltros(await searchParams);
   const supabase = await crearClienteServidor();
   const [{ data: vacante }, postulaciones, { data: todas }] = await Promise.all([
     supabase.from("vacantes").select(COLUMNAS_VACANTE).eq("id", id).maybeSingle<Vacante>(),
@@ -33,7 +38,9 @@ export default async function PostulacionesVacantePage({
     postulaciones.map((p) => p.postulante_id),
   );
   const { analizadas, promedio, mejor } = resumenAfinidad(postulaciones);
-  const ordenadas = ordenarPorAfinidad(postulaciones);
+  const ordenadas = ordenarPorAfinidad(aplicarFiltros(postulaciones, filtros));
+  const porEtapa = (valor: string) => postulaciones.filter((x) => x.etapa === valor).length;
+  const ruta = `/reclutador/vacantes/${id}/postulaciones`;
 
   return (
     <div className="space-y-6">
@@ -88,9 +95,36 @@ export default async function PostulacionesVacantePage({
           <p className="mt-4 font-semibold text-marca">Todavía nadie se postuló a esta vacante</p>
         </div>
       ) : (
-        <section className={estilosReclutador.tarjeta}>
-          <h2 className="mb-4 font-bold text-marca">Postulantes</h2>
-          <ListaPostulantes postulaciones={ordenadas} titulosVacantes={titulos} estadosCv={estadosCv} mejorId={mejor?.id} />
+        <section className={`${estilosReclutador.tarjeta} space-y-5`}>
+          <div className="flex flex-wrap gap-2" aria-label="Postulantes por etapa">
+            {ETAPAS.map((e) => (
+              <Link
+                key={e.valor}
+                href={`${ruta}?etapa=${e.valor}`}
+                className={`rounded-full px-3 py-1.5 text-xs font-semibold ring-1 ring-inset ring-slate-200 transition hover:ring-blue-300 ${e.clases} ${filtros.etapa === e.valor ? "outline outline-2 outline-blue-600" : ""}`}
+              >
+                {e.texto}: {porEtapa(e.valor)}
+              </Link>
+            ))}
+          </div>
+          <FiltrosPostulaciones filtros={filtros} ruta={ruta} />
+          <form method="get" action={`/reclutador/vacantes/${id}/comparar`} className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="font-bold text-marca">
+                Postulantes{hayFiltros(filtros) ? ` (${ordenadas.length} de ${postulaciones.length})` : ""}
+              </h2>
+              <button type="submit" className={`${estilosReclutador.botonSecundario} !px-4 !py-2 text-sm`}>
+                Comparar seleccionados (2 a 4)
+              </button>
+            </div>
+            {ordenadas.length === 0 ? (
+              <p className="rounded-xl bg-slate-50 px-4 py-6 text-center text-sm text-slate-600">
+                Ningún postulante coincide con los filtros.
+              </p>
+            ) : (
+              <ListaPostulantes postulaciones={ordenadas} titulosVacantes={titulos} estadosCv={estadosCv} mejorId={mejor?.id} seleccionable />
+            )}
+          </form>
         </section>
       )}
     </div>

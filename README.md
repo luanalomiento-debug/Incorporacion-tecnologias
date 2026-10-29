@@ -21,8 +21,9 @@ Hay dos tipos de usuario (roles):
   - Tiene su **perfil**, donde puede editar su nombre y apellido.
   - La vista tiene una parte para **operar** y otra **estratégica**:
     - **Vacantes** y **Nueva vacante** (crear, editar, activar o desactivar).
-    - **Postulaciones**: quiénes se postularon a cada puesto, ordenados por afinidad, con el acceso a su CV y un botón para **enviar un correo** (abre tu programa de correo con el mensaje empezado). Dentro de esta pestaña están las **Recomendaciones de IA**.
-    - **Dashboard** (estratégico): un resumen global, sin nombres ni listas de personas: postulaciones recibidas, promedio de matching, cuántas postulaciones hicieron un buen match, y el **valor extra de la IA** (cuántas personas y vacantes conectó además de las postulaciones). 
+    - **Postulaciones**: quiénes se postularon a cada puesto, ordenados por afinidad, con **búsqueda y filtros** (nombre, etapa, afinidad), el **cambio de etapa con un clic** y la opción de **comparar de 2 a 4 candidatos** lado a lado. Dentro de esta pestaña están las **Recomendaciones de IA**: personas que la IA recomienda para un puesto y que todavía no se postularon a él.
+    - **Ficha del candidato** (botón «Ver ficha»): todo en un lugar. Etapa del proceso e historial de cambios, análisis de la IA (lo que figura en el CV, lo inferido y lo que no figura), **notas del equipo** (el postulante nunca las ve), **preguntas de entrevista** generadas por la IA con un botón, acceso al CV y al correo.
+    - **Dashboard**: responde "qué pasa, qué necesita atención y qué hacer ahora". Alertas con acceso directo (candidatos sin revisar, procesos estancados, vacantes sin postulaciones, CVs sin analizar), indicadores, embudo por etapa, tendencia semanal, comparación entre vacantes y el **valor extra de la IA**. Tiene filtros por vacante y período, y la definición de cada indicador al final de la página. Es la pantalla de inicio de la reclutadora.
   - Desde cada vacante, el botón **Ver postulaciones** lleva a las postulaciones de ese puesto, con el **mejor match** y el **promedio de matching**; el botón volver lleva a Vacantes.
   - Ve la **afinidad (0 a 100)** de cada postulante con el puesto, con los motivos (qué coincide y qué falta), los **candidatos sugeridos** para cada vacante abierta y las **otras vacantes sugeridas**. Todo lo calcula la IA (ver sección 8). Mientras un CV no se analizó, figura como "Pendiente de análisis".
 
@@ -77,6 +78,7 @@ Necesitás [Node.js](https://nodejs.org) (versión LTS) y tener el proyecto desc
    5. `20261008120000_editar_vacantes.sql` (permite editar vacantes ya creadas)
    6. `20261015120000_analisis_ia.sql` (análisis con IA: estado de cada CV, motivos de las sugerencias y tope diario)
    7. `20261022120000_eliminar_vacantes.sql` (permite eliminar vacantes; las borra junto con sus postulaciones)
+   8. `20261029120000_seguimiento.sql` (etapas del proceso, historial de cambios, notas y preguntas de entrevista; no borra ni cambia datos existentes: todas las postulaciones actuales quedan en la etapa «Nuevo»). **Correla antes de publicar esta versión de la app.**
 
    Cada una tiene que terminar con "Success". No hace falta crear el bucket a mano: la tercera migración lo crea.
 3. **Desactivá la confirmación de email (solo para desarrollo).** En **Authentication → Sign In / Providers → Email**, desactivá "Confirm email". Si está activada, quien se registre tendrá que confirmar su correo antes de poder entrar.

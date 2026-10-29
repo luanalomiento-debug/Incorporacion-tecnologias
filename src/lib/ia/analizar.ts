@@ -128,6 +128,7 @@ export async function analizarCv(
       .map((v) => {
         const motivos: MotivosAfinidad = {
           coincide: v.coincide.slice(0, 6),
+          inferido: v.inferido.slice(0, 6),
           falta: v.falta.slice(0, 6),
           conclusion: v.conclusion,
         };

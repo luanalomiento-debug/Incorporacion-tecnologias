@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { agruparPorVacante, cargarEstadosCv, cargarPostulaciones, nombreCompleto, ordenarPorAfinidad, resumenAfinidad } from "@/lib/dashboard";
+import { aplicarFiltros, hayFiltros, leerFiltros } from "@/lib/filtros";
 import { COLUMNAS_VACANTE, type Vacante } from "@/lib/tipos";
 import { Icono } from "@/components/postulante/Icono";
 import { ActualizarSiAnalizando } from "@/components/reclutador/ActualizarSiAnalizando";
 import { EtiquetaEstado } from "@/components/reclutador/EtiquetaEstado";
+import { FiltrosPostulaciones } from "@/components/reclutador/FiltrosPostulaciones";
 import { ListaPostulantes } from "@/components/reclutador/ListaPostulantes";
 import { PestanasPostulaciones } from "@/components/reclutador/PestanasPostulaciones";
 import { estilosReclutador } from "@/components/reclutador/estilos";
@@ -13,7 +15,8 @@ import { estilosReclutador } from "@/components/reclutador/estilos";
 export const maxDuration = 60;
 
 // Pestaña "Postulaciones" (para operar): quiénes se postularon a cada puesto.
-export default async function PostulacionesPage() {
+export default async function PostulacionesPage({ searchParams }: PageProps<"/reclutador/postulaciones">) {
+  const filtros = leerFiltros(await searchParams);
   const supabase = await crearClienteServidor();
   const [{ data }, postulaciones, estadosCv] = await Promise.all([
     supabase.from("vacantes").select(COLUMNAS_VACANTE).order("creado_en", { ascending: false }),
@@ -21,7 +24,8 @@ export default async function PostulacionesPage() {
     cargarEstadosCv(supabase),
   ]);
   const vacantes = (data ?? []) as Vacante[];
-  const porVacante = agruparPorVacante(postulaciones);
+  const porVacante = agruparPorVacante(aplicarFiltros(postulaciones, filtros));
+  const hayPostulaciones = postulaciones.length > 0;
   const titulos = new Map(vacantes.map((v) => [v.id, v.titulo]));
 
   // Primero los puestos con postulaciones más recientes (lo último que pasó).
@@ -40,7 +44,11 @@ export default async function PostulacionesPage() {
         <PestanasPostulaciones activa="postulaciones" />
       </div>
 
-      {conPostulantes.length === 0 ? (
+      {hayPostulaciones && <FiltrosPostulaciones filtros={filtros} ruta="/reclutador/postulaciones" />}
+
+      {conPostulantes.length === 0 && hayFiltros(filtros) ? (
+        <p className={`${estilosReclutador.tarjeta} text-center text-sm text-slate-600`}>Ningún postulante coincide con los filtros.</p>
+      ) : conPostulantes.length === 0 ? (
         <div className={`${estilosReclutador.tarjeta} flex flex-col items-center py-12 text-center`}>
           <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
             <Icono nombre="documento" className="h-7 w-7" />
