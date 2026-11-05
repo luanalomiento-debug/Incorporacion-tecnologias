@@ -21,7 +21,29 @@ Tu documento tiene afirmaciones que **ya no son ciertas** o que no coinciden con
 | "La app se conecta a Supabase directamente desde el navegador; la `anon key` queda expuesta". | Casi todo el acceso a datos se hace **desde el servidor** (Server Components y Server Actions de Next.js) con la sesión del usuario. El **único** uso directo desde el navegador es subir el PDF a Storage (protegido por las políticas del bucket). La clave pública se llama ahora *publishable key*. | Reescribir el párrafo (punto 3 y 7). |
 | "El enlace firmado vence a los pocos minutos". | Vence a los **60 segundos**. | Precisar. |
 | Funciones de la base: `crear_perfil_nuevo_usuario`, `cvs_limpiar_analisis`, `es_reclutador`. | Además hay: `postulaciones_registrar_etapa`, `vacantes_registrar_cambios`, `sincronizar_email_perfil`. | Actualizar. |
+| "Vercel publica a producción al mergear a `main`". | **Verificado en Vercel:** el proyecto tiene como rama de **producción** la rama de trabajo `claude/audit-recruitment-app-ir583k`, **no `main`**. Los despliegues desde `main` figuran como *preview*. | Poner **Production Branch = `main`** en Vercel (Settings → Environments → Production → Branch Tracking) antes de describir el flujo. |
+| Migraciones aplicadas por la integración con GitHub. | **Verificado en Supabase:** solo **3 de las 10** migraciones figuran registradas (`perfiles`, `vacantes`, `cvs`); las otras 7 se corrieron en el SQL Editor y no quedan registradas. | Contarlo así (ver punto 2). |
 | Sección "Modelo de datos" vacía. | Ver punto 1 (ya hay análisis completo en `docs/base-de-datos.md`). | Completar. |
+
+### Lo que se verificó en los paneles reales (5/11/2026, solo lectura)
+
+| Dato | Resultado | Para la presentación |
+|---|---|---|
+| Supabase: proyecto | `OBLIGATORIO-ORT`, región **us-east-1**, PostgreSQL **17**, estado saludable, creado el 24/09 | Usar estos datos en las diapositivas 2 y 10 |
+| Supabase: **plan** | **Free** (organización "Obligatorio ORT") | Punto 4: **no hay backups automáticos** → el respaldo manual es real, no una exageración. Punto 9: límites del plan gratuito |
+| Supabase: tablas | 9 tablas, **RLS activado en todas**, con comentarios; `afinidades_cv_vacante` y el esquema `respaldo` existen (las migraciones 9 y 10 y el respaldo se aplicaron) | Punto 1 |
+| Supabase: asesor de **seguridad** | 3 avisos: (a) `postulaciones_registrar_etapa()` ejecutable vía API (**ya hay corrección preparada**: `20261105130000_revocar_ejecucion_trigger.sql`); (b) `es_reclutador()` ejecutable por usuarios autenticados (**es intencional**: las políticas RLS la necesitan); (c) *protección contra contraseñas filtradas* desactivada (ajuste de Auth, puede requerir plan Pro). Además avisos informativos de "RLS sin políticas" en `analisis_ia_intentos` (**intencional**: solo el servidor la usa) y en las copias de `respaldo` (**intencional**: nadie las lee desde la app) | Punto 3 y 5: mostrar que **usamos el asesor de seguridad de Supabase** y qué decidimos con cada aviso |
+| Supabase: asesor de **rendimiento** | Solo avisos informativos: 3 claves foráneas sin índice (autores de notas/movimientos y creador de vacante; no se consultan por ahí) e índices aún sin uso (normal: casi no hay tráfico) | Punto 9 |
+| Supabase: registro de migraciones | Solo **3 de 10** registradas (las primeras); las otras se aplicaron en el SQL Editor | Punto 2 (honestidad) |
+| Vercel: proyecto | `incorporacion-tecnologias` (equipo "OB Integracion"), Next.js, Node 24. Existe **un segundo proyecto** `incorporacion-tecnologias-th4v`, más viejo | Conviene borrar el sobrante para no confundir |
+| Vercel: **rama de producción** | `claude/audit-recruitment-app-ir583k` (no `main`). Los despliegues de `main` salen como *preview* | **Cambiar a `main`** (ver abajo) |
+| Vercel: variables | Todas cargadas: `ANTHROPIC_API_KEY`, `SUPABASE_SECRET_KEY` y `CRON_SECRET` como **Sensitive** (los valores no se pueden volver a leer). `NEXT_PUBLIC_SUPABASE_URL` solo está en **Production** (no en Preview) | Punto 6 ✅. Punto 8: los *previews* hoy no tienen la URL de Supabase y no funcionarían |
+| Vercel: protección | **Vercel Authentication activada** (`all_except_custom_domains`) | ⚠ Posible muro de login de Vercel para quien abra el sitio sin cuenta. **Probalo en una ventana privada antes de la demo** |
+| Vercel: último despliegue de producción | Estado **READY** | Punto 2 |
+
+**Dos cosas para arreglar antes de presentar** (las dos son pasos tuyos en el panel de Vercel):
+1. **Production Branch → `main`.** Hoy cada push a la rama de trabajo se publica en producción sin pasar por `main`; es lo contrario de lo que dice la presentación.
+2. **Abrir la URL de producción en una ventana privada** (sin sesión de Vercel). Si pide iniciar sesión en Vercel, desactivá *Vercel Authentication* para producción en Settings → Deployment Protection, para que el profesor pueda entrar.
 
 ---
 
@@ -95,9 +117,9 @@ erDiagram
 
 **Cómo llega un cambio a producción** (✅):
 1. Se trabaja en una **rama** y se abre un **Pull Request** en GitHub.
-2. Vercel está conectado al repositorio: por cada push crea un **deploy de preview** (⚠ confirmar en Vercel que está activo en tu proyecto).
+2. Vercel está conectado al repositorio y crea un despliegue por cada push (✅ verificado). ⚠ Hoy la rama de producción configurada es la de trabajo; **dejar `main` como Production Branch** para que solo `main` llegue a producción y el resto sean *previews*.
 3. Al **mergear a `main`**, Vercel compila y publica en **producción**; si la compilación falla, **sigue online la versión anterior**.
-4. **Base de datos:** los cambios se escriben como **migraciones SQL versionadas en GitHub** y se **aplican manualmente** en Supabase (SQL Editor), con respaldo previo. 🛠 *Mejora propuesta:* automatizarlo con Supabase CLI/GitHub Actions.
+4. **Base de datos:** los cambios se escriben como **migraciones SQL versionadas en GitHub** y se **aplican manualmente** en Supabase (SQL Editor), con respaldo previo. *(Verificado: solo las 3 primeras figuran en el registro de migraciones de Supabase; el resto se corrió a mano.)* 🛠 *Mejora propuesta:* automatizarlo con Supabase CLI/GitHub Actions.
 5. Las claves viven en **variables de entorno de Vercel**; el repositorio solo tiene `.env.example`.
 
 **Guion:** "No tenemos servidores propios. Vercel sirve la aplicación y ejecuta la lógica de negocio como funciones; Supabase es la base, el login y el almacenamiento de archivos; y la IA es un servicio externo de Anthropic. El código está en GitHub: cuando hacemos merge a `main`, Vercel publica solo. Los cambios de base de datos los versionamos como migraciones SQL y hoy los aplicamos a mano con un respaldo previo; automatizarlo es una mejora a futuro."
@@ -170,7 +192,7 @@ flowchart LR
 | "VM" | — | **No hay máquinas virtuales** (arquitectura serverless): no hay servidores que respaldar |
 
 - **Esquema propuesto (frecuencia e inmutabilidad):** backup diario automático con retención de 7 a 30 días · una copia **semanal externa** (`pg_dump` + copia del bucket) guardada en otro proveedor con **bloqueo de borrado/inmutabilidad** (para ransomware o borrado accidental) · **prueba de restauración** periódica (un backup que no se probó no es un backup) · regla **3-2-1** (3 copias, 2 medios, 1 fuera del proveedor).
-- ⚠ **Verificá en tu panel de Supabase** (Database → Backups) qué plan tienen: el plan gratuito **no ofrece backups descargables**, y por eso nuestro respaldo manual previo a las migraciones. Decilo con honestidad: "hoy usamos respaldo manual; para producción real pasaríamos a un plan con backups automáticos".
+- ✅ **Verificado:** el proyecto está en el **plan Free** de Supabase, que no incluye backups automáticos; por eso hicimos el respaldo manual previo a las migraciones (copia de las 9 tablas en el esquema `respaldo`, con control de filas). Decilo con honestidad: "hoy usamos respaldo manual; para producción real pasaríamos a un plan con backups automáticos".
 - Atención con un matiz que suma puntos: el respaldo manual está **dentro del mismo proyecto**, así que protege de errores humanos o de una migración fallida, pero no de perder el proyecto completo; por eso proponemos además la copia externa.
 
 **Guion:** "Un backup sirve para recuperarse de un borrado accidental, una falla o una mala migración. Para decidir cuánto invertir, clasificamos la plataforma como de criticidad media: no es transaccional, pero tiene datos personales. Proponemos perder como máximo un día de datos y recuperar en unas horas, sin alta disponibilidad. Cada pieza se respalda distinto: el código en GitHub, la base con copias diarias, y los archivos aparte, porque el backup de la base no los incluye. Hoy hacemos un respaldo manual antes de cada cambio de estructura; en producción real pasaríamos a backups automáticos y una copia externa inmutable."
@@ -262,7 +284,7 @@ flowchart LR
 | **QA** (pruebas, *staging*) | Probar el cambio **completo** antes de publicar, igual a producción | Equipo y quien valida | Datos de prueba realistas |
 | **PROD** (producción) | Lo que usan las personas reales | Usuarios | **Reales**, con backups |
 
-- **Hoy (✅/⚠ ser honestas):** *DEV* = computadora local (`npm run dev` con `.env.local`) · *QA* = **deploys de preview de Vercel** por cada rama/PR · *PROD* = `main` en Vercel. **Pero hay un solo proyecto de Supabase**: los tres comparten la misma base. Esa es la limitación a mejorar.
+- **Hoy (✅/⚠ ser honestas):** *DEV* = computadora local (`npm run dev` con `.env.local`) · *QA* = **deploys de preview de Vercel** por cada rama/PR · *PROD* = `main` en Vercel. **Pero hay un solo proyecto de Supabase**: los tres comparten la misma base. Esa es la limitación a mejorar. Además (verificado) `NEXT_PUBLIC_SUPABASE_URL` solo existe para Production, así que los *previews* hoy no podrían conectarse; habría que cargarla también en Preview apuntando al proyecto de QA.
 - **Cómo lo implementaríamos (🛠):**
   1. **Tres proyectos de Supabase** (dev, qa, prod), o *Supabase Branching* (plan Pro), cada uno con sus propias claves.
   2. **Variables de entorno por ambiente en Vercel** (Development / Preview / Production), con claves **distintas** y topes de gasto de IA distintos.
@@ -285,7 +307,7 @@ flowchart LR
 | Pieza | Hoy | Qué limita | Para crecer |
 |---|---|---|---|
 | Vercel | Plan gratuito (Hobby: uso personal/no comercial) | Uso comercial, límites de ejecución y de ancho de banda | **Plan Pro** (por usuario, mensual); las funciones escalan solas |
-| Supabase | Plan gratuito | ~500 MB de base, ~1 GB de archivos, usuarios activos limitados, el proyecto se **pausa por inactividad**, sin backups descargables | **Plan Pro** (~US$25/mes): más almacenamiento, backups diarios, sin pausa; luego **más cómputo**, *connection pooling* y **réplicas de lectura** |
+| Supabase | **Plan Free (verificado)** | ~500 MB de base, ~1 GB de archivos, usuarios activos limitados, el proyecto se **pausa por inactividad**, sin backups descargables | **Plan Pro** (~US$25/mes): más almacenamiento, backups diarios, sin pausa; luego **más cómputo**, *connection pooling* y **réplicas de lectura** |
 | API de Anthropic | Pago por uso con tope mensual | **Costo y velocidad** por CV analizado | El modelo más barato (Haiku), topes por persona, análisis solo al subir el CV; a gran escala: **cola de trabajos** y lotes |
 
 - **Cuellos de botella identificados y qué ya hicimos (✅):** índices en las consultas frecuentes · **paginación** de cargas grandes (Supabase devuelve máx. 1000 filas por consulta) · análisis en segundo plano para no hacer esperar al usuario · tope diario y límite de vacantes por análisis · concurrencia limitada.
@@ -330,10 +352,11 @@ flowchart LR
 7. **¿Dónde se ve el historial de decisiones?** Cada cambio de etapa queda registrado por un *trigger* (quién y cuándo), y cada resultado de IA guarda qué modelo lo calculó.
 8. **¿Cuánto cuesta analizar un CV?** Muy poco con Haiku, pero depende del tamaño del CV y del plan; ⚠ citar el costo real de tu consola de Anthropic.
 
-## Apéndice B: qué verificar en los paneles antes de presentar (yo no puedo verlo)
+## Apéndice B: qué quedó verificado y qué falta
 
-- **Supabase** → *Project Settings → Billing/Subscription* (plan actual) y *Database → Backups* (qué backups existen).
-- **Supabase** → *Project Settings → Integrations*: ¿hay conexión con GitHub? (Confirmará que **no** se aplican migraciones automáticamente.)
-- **Vercel** → *Settings → Git*: repositorio conectado y *Production Branch* = `main`. *Deployments*: que aparezcan previews por rama.
-- **Vercel** → *Settings → Cron Jobs*: que figure `/api/limpieza`; *Environment Variables*: que estén `ANTHROPIC_API_KEY`, `SUPABASE_SECRET_KEY` y `CRON_SECRET` como Sensitive.
-- **Anthropic** → *Billing*: el tope mensual de gasto que configuraron.
+**Verificado (5/11/2026):** proyecto y plan de Supabase, tablas y RLS, asesores de seguridad y rendimiento, registro de migraciones, proyecto y despliegues de Vercel, rama de producción, nombres de variables de entorno y su tipo.
+**Falta que lo mires vos (no tengo acceso):**
+- **Vercel → plan del equipo** (Hobby/Pro) y **Settings → Cron Jobs**: que figure `/api/limpieza`.
+- **Vercel → Settings → Git:** cambiar *Production Branch* a `main`; **Deployment Protection**: decidir si se desactiva *Vercel Authentication*.
+- **Supabase → Integrations:** si hay conexión con GitHub.
+- **Anthropic → Billing:** el tope mensual de gasto configurado.
