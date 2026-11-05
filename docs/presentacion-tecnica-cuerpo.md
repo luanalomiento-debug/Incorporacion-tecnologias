@@ -356,6 +356,7 @@ flowchart LR
 ## Apéndice B: qué quedó verificado y qué falta
 
 **Verificado (5/11/2026):** proyecto y plan de Supabase, tablas y RLS, asesores de seguridad y rendimiento, registro de migraciones, proyecto y despliegues de Vercel, rama de producción, nombres de variables de entorno y su tipo.
+**Cambio hecho por el equipo el 5/11:** la rama de producción de Vercel pasó de la rama de trabajo a `main` (se comprueba con un despliegue de prueba).
 **Falta que lo mires vos (no tengo acceso):**
 - **Vercel → Settings → Cron Jobs**: que figure `/api/limpieza`. (El plan ya está verificado: **Hobby**, con un único miembro, la cuenta dueña del proyecto.)
 - **Vercel → Settings → Git:** cambiar *Production Branch* a `main`; **Deployment Protection**: decidir si se desactiva *Vercel Authentication*.
