@@ -38,6 +38,7 @@ Tu documento tiene afirmaciones que **ya no son ciertas** o que no coinciden con
 | Vercel: proyecto | `incorporacion-tecnologias` (equipo "OB Integracion"), Next.js, Node 24. Existe **un segundo proyecto** `incorporacion-tecnologias-th4v`, más viejo | Conviene borrar el sobrante para no confundir |
 | Vercel: **rama de producción** | `claude/audit-recruitment-app-ir583k` (no `main`). Los despliegues de `main` salen como *preview* | **Cambiar a `main`** (ver abajo) |
 | Vercel: variables | Todas cargadas: `ANTHROPIC_API_KEY`, `SUPABASE_SECRET_KEY` y `CRON_SECRET` como **Sensitive** (los valores no se pueden volver a leer). `NEXT_PUBLIC_SUPABASE_URL` solo está en **Production** (no en Preview) | Punto 6 ✅. Punto 8: los *previews* hoy no tienen la URL de Supabase y no funcionarían |
+| Vercel: **plan** | **Hobby** (gratuito, uso no comercial, un solo usuario en el equipo). La cuenta dueña es la única integrante | Punto 9: para uso comercial o varias personas hace falta **Pro**. Solo la cuenta dueña puede cambiar la configuración del proyecto |
 | Vercel: protección | **Vercel Authentication activada** (`all_except_custom_domains`) | ⚠ Posible muro de login de Vercel para quien abra el sitio sin cuenta. **Probalo en una ventana privada antes de la demo** |
 | Vercel: último despliegue de producción | Estado **READY** | Punto 2 |
 
@@ -356,7 +357,7 @@ flowchart LR
 
 **Verificado (5/11/2026):** proyecto y plan de Supabase, tablas y RLS, asesores de seguridad y rendimiento, registro de migraciones, proyecto y despliegues de Vercel, rama de producción, nombres de variables de entorno y su tipo.
 **Falta que lo mires vos (no tengo acceso):**
-- **Vercel → plan del equipo** (Hobby/Pro) y **Settings → Cron Jobs**: que figure `/api/limpieza`.
+- **Vercel → Settings → Cron Jobs**: que figure `/api/limpieza`. (El plan ya está verificado: **Hobby**, con un único miembro, la cuenta dueña del proyecto.)
 - **Vercel → Settings → Git:** cambiar *Production Branch* a `main`; **Deployment Protection**: decidir si se desactiva *Vercel Authentication*.
 - **Supabase → Integrations:** si hay conexión con GitHub.
 - **Anthropic → Billing:** el tope mensual de gasto configurado.
