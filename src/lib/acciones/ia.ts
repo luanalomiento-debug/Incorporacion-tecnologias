@@ -30,28 +30,55 @@ export async function reanalizarCv(postulanteId: string): Promise<Resultado> {
   return { mensaje: "Empezó el análisis. En unos segundos se actualiza solo." };
 }
 
-// Vuelve a analizar los CVs que más lo necesitan: primero los que nunca se analizaron o
-// fallaron, después los más viejos. Procesa un lote por vez para cuidar el tiempo y el gasto.
+// Analiza solo los CVs que lo necesitan: los que nunca se analizaron, los que fallaron y los que
+// todavía no fueron comparados con alguna de las vacantes abiertas. Si no hay ninguno, avisa que
+// todo está al día (y no gasta nada). Procesa un lote por vez para cuidar el tiempo y el gasto.
 export async function reanalizarPendientes(): Promise<Resultado> {
   await exigirRol("reclutador");
   const supabase = await crearClienteServidor();
 
-  const { data } = await supabase
-    .from("cvs")
-    .select("postulante_id, analisis_estado, analisis_iniciado_en, analizado_en")
-    .order("analizado_en", { ascending: true, nullsFirst: true })
-    .limit(100);
+  const [cvs, { data: abiertas }, comparados] = await Promise.all([
+    traerTodo<{ postulante_id: string; analisis_estado: string; analisis_iniciado_en: string | null; analizado_en: string | null }>(
+      (desde, hasta) =>
+        supabase
+          .from("cvs")
+          .select("postulante_id, analisis_estado, analisis_iniciado_en, analizado_en")
+          .order("id")
+          .range(desde, hasta),
+    ),
+    supabase.from("vacantes").select("id").eq("activa", true),
+    traerTodo<{ postulante_id: string; vacante_id: string }>((desde, hasta) =>
+      supabase.from("afinidades_cv_vacante").select("postulante_id, vacante_id").order("id").range(desde, hasta),
+    ),
+  ]);
+
+  const idsAbiertas = (abiertas ?? []).map((v) => v.id as string);
+  const comparadasPor = new Map<string, Set<string>>();
+  for (const c of comparados) {
+    const set = comparadasPor.get(c.postulante_id) ?? new Set<string>();
+    set.add(c.vacante_id);
+    comparadasPor.set(c.postulante_id, set);
+  }
 
   const vencido = Date.now() - MINUTOS_ANALISIS_VENCIDO * 60 * 1000;
-  const elegibles = (data ?? []).filter(
-    (c) =>
-      c.analisis_estado !== "analizando" ||
-      !c.analisis_iniciado_en ||
-      new Date(c.analisis_iniciado_en).getTime() < vencido,
-  );
+  const elegibles = cvs
+    .filter((c) => {
+      // Si se está analizando ahora mismo (y no venció), no se vuelve a pedir.
+      const enCurso =
+        c.analisis_estado === "analizando" &&
+        c.analisis_iniciado_en &&
+        new Date(c.analisis_iniciado_en).getTime() >= vencido;
+      if (enCurso) return false;
+      if (c.analisis_estado !== "listo") return true; // nunca analizado, fallido o vencido
+      const hechas = comparadasPor.get(c.postulante_id);
+      return idsAbiertas.some((id) => !hechas?.has(id)); // le falta alguna vacante abierta
+    })
+    // Primero los que nunca se analizaron, después por fecha de análisis (los más viejos antes).
+    .sort((a, b) => (a.analizado_en ?? "").localeCompare(b.analizado_en ?? ""));
   const lote = elegibles.slice(0, LOTE_REANALISIS).map((c) => c.postulante_id as string);
 
-  if (lote.length === 0) return { mensaje: "No hay CVs para analizar en este momento." };
+  if (lote.length === 0)
+    return { mensaje: "Todo está al día: todos los CVs están analizados y comparados con las vacantes abiertas." };
 
   after(async () => {
     await analizarVarios(lote, "reclutador");
