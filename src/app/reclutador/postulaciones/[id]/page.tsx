@@ -11,7 +11,6 @@ import { Icono } from "@/components/postulante/Icono";
 import { ActualizarSiAnalizando } from "@/components/reclutador/ActualizarSiAnalizando";
 import { BloquesDeMotivos, MedidorAfinidad } from "@/components/reclutador/Afinidad";
 import { BotonPreguntas } from "@/components/reclutador/BotonPreguntas";
-import { BotonReanalizar } from "@/components/reclutador/BotonReanalizar";
 import { EtiquetaEtapa } from "@/components/reclutador/EtiquetaEtapa";
 import { NotasPostulacion } from "@/components/reclutador/NotasPostulacion";
 import { SelectorEtapa } from "@/components/reclutador/SelectorEtapa";
@@ -143,10 +142,7 @@ export default async function FichaCandidatoPage({ params }: PageProps<"/recluta
       <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <div className="space-y-6">
           <section className={`${estilosReclutador.tarjeta} space-y-4`}>
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2 className="font-bold text-marca">Análisis de la IA para este puesto</h2>
-              <BotonReanalizar postulanteId={p.postulante_id} texto={p.afinidad === null ? "Analizar este CV" : "Re-analizar este CV"} />
-            </div>
+            <h2 className="font-bold text-marca">Análisis de la IA para este puesto</h2>
             {cv?.resumen && <p className="text-sm text-slate-700">{cv.resumen}</p>}
             {analisis ? (
               <BloquesDeMotivos motivos={analisis} />

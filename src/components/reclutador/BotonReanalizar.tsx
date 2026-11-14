@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { estadoAnalisis, reanalizarCv, reanalizarParaVacante, reanalizarPendientes } from "@/lib/acciones/ia";
+import { estadoAnalisis, reanalizarPendientes } from "@/lib/acciones/ia";
 import { estilosReclutador } from "@/components/reclutador/estilos";
 
 const CADA_MS = 4000; // cada cuánto se consulta el avance
@@ -10,22 +10,9 @@ const ESPERA_MAXIMA_MS = 3 * 60 * 1000; // pasado este tiempo se deja de esperar
 
 type Seguimiento = { lote: string[]; desde: string; iniciado: number };
 
-// Sin `postulanteId` ni `vacanteId`, re-analiza un lote de CVs pendientes; con `postulanteId`, el CV
-// de esa persona; con `vacanteId`, los CVs que todavía no se compararon con esa vacante.
+// Analiza los CVs pendientes (sin analizar, con error o sin comparar con alguna vacante abierta).
 // Después de pedir el análisis, muestra el avance y avisa cuando termina.
-export function BotonReanalizar({
-  postulanteId,
-  vacanteId,
-  texto,
-  claro = false,
-  grande = false,
-}: {
-  postulanteId?: string;
-  vacanteId?: string;
-  texto: string;
-  claro?: boolean;
-  grande?: boolean;
-}) {
+export function BotonReanalizar({ texto, claro = false, grande = false }: { texto: string; claro?: boolean; grande?: boolean }) {
   const router = useRouter();
   const [enviando, setEnviando] = useState(false);
   const [aviso, setAviso] = useState("");
@@ -36,11 +23,7 @@ export function BotonReanalizar({
     setEnviando(true);
     setAviso("");
     setAvance(null);
-    const resultado = vacanteId
-      ? await reanalizarParaVacante(vacanteId)
-      : postulanteId
-        ? await reanalizarCv(postulanteId)
-        : await reanalizarPendientes();
+    const resultado = await reanalizarPendientes();
     setEnviando(false);
     setAviso(resultado.error ?? resultado.mensaje ?? "");
     if (resultado.lote && resultado.lote.length > 0 && resultado.desde) {
