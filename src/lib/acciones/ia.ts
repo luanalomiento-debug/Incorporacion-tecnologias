@@ -8,7 +8,8 @@ import { LOTE_REANALISIS, MINUTOS_ANALISIS_VENCIDO } from "@/lib/ia/config";
 import { traerTodo } from "@/lib/dashboard";
 import { crearClienteServidor } from "@/lib/supabase/server";
 
-type Resultado = { error?: string; mensaje?: string };
+// `lote` y `desde` permiten a la pantalla seguir el avance del análisis (ver `estadoAnalisis`).
+type Resultado = { error?: string; mensaje?: string; lote?: string[]; desde?: string };
 
 const ES_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -23,11 +24,12 @@ export async function reanalizarCv(postulanteId: string): Promise<Resultado> {
   await exigirRol("reclutador");
   if (!ES_UUID.test(postulanteId)) return { error: "No se reconoció a la persona." };
 
+  const desde = new Date().toISOString();
   after(async () => {
     await analizarCv(postulanteId, "reclutador");
   });
   refrescarPantallas();
-  return { mensaje: "Empezó el análisis. En unos segundos se actualiza solo." };
+  return { mensaje: "Empezó el análisis.", lote: [postulanteId], desde };
 }
 
 // Analiza solo los CVs que lo necesitan: los que nunca se analizaron, los que fallaron y los que
@@ -80,6 +82,7 @@ export async function reanalizarPendientes(): Promise<Resultado> {
   if (lote.length === 0)
     return { mensaje: "Todo está al día: todos los CVs están analizados y comparados con las vacantes abiertas." };
 
+  const desde = new Date().toISOString();
   after(async () => {
     await analizarVarios(lote, "reclutador");
   });
@@ -90,6 +93,8 @@ export async function reanalizarPendientes(): Promise<Resultado> {
       faltan > 0
         ? `Empezó el análisis de ${lote.length} CVs. Quedan ${faltan} más: cuando termine, volvé a apretar el botón.`
         : `Empezó el análisis de ${lote.length} ${lote.length === 1 ? "CV" : "CVs"}. En unos segundos se actualiza solo.`,
+    lote,
+    desde,
   };
 }
 
@@ -126,6 +131,7 @@ export async function reanalizarParaVacante(vacanteId: string): Promise<Resultad
 
   if (lote.length === 0) return { mensaje: "Todos los CVs ya fueron comparados con esta vacante." };
 
+  const desde = new Date().toISOString();
   after(async () => {
     await analizarVarios(lote, "reclutador");
   });
@@ -136,5 +142,29 @@ export async function reanalizarParaVacante(vacanteId: string): Promise<Resultad
       faltan > 0
         ? `Empezó el análisis de ${lote.length} CVs. Quedan ${faltan} más: cuando termine, volvé a apretar el botón.`
         : `Empezó el análisis de ${lote.length} ${lote.length === 1 ? "CV" : "CVs"}. En unos segundos aparecen los resultados en Postulaciones → Recomendaciones de IA.`,
+    lote,
+    desde,
   };
+}
+
+// Avance de un análisis en marcha: de los CVs enviados, cuántos ya terminaron (bien o con error)
+// desde el momento en que se pidió. La pantalla lo consulta cada pocos segundos.
+export async function estadoAnalisis(lote: string[], desde: string): Promise<{ total: number; terminados: number; error?: string }> {
+  await exigirRol("reclutador");
+  const inicio = new Date(desde).getTime();
+  if (!Array.isArray(lote) || lote.length === 0 || lote.length > 50 || !lote.every((id) => ES_UUID.test(id)) || Number.isNaN(inicio))
+    return { total: 0, terminados: 0, error: "Consulta no válida." };
+
+  const supabase = await crearClienteServidor();
+  const { data } = await supabase
+    .from("cvs")
+    .select("postulante_id, analisis_estado, analisis_iniciado_en, analizado_en")
+    .in("postulante_id", lote);
+
+  const terminados = (data ?? []).filter((c) => {
+    if (c.analisis_estado === "listo") return !!c.analizado_en && new Date(c.analizado_en).getTime() >= inicio;
+    if (c.analisis_estado === "error") return !!c.analisis_iniciado_en && new Date(c.analisis_iniciado_en).getTime() >= inicio;
+    return false;
+  }).length;
+  return { total: lote.length, terminados };
 }
