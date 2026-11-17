@@ -97,7 +97,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/reclut
   const buenosExtra = extras.filter((c) => Number(c.afinidad) >= AFINIDAD_BUEN_MATCH);
   const personasExtra = new Set(buenosExtra.map((c) => c.postulante_id)).size;
   const vacantesCubribles = vacantesVisibles.filter(
-    (v) => v.activa && !porVacante.has(v.id) && buenosExtra.some((c) => c.vacante_id === v.id),
+    (v) => v.activa && !porVacante.has(v.id) && extras.some((c) => c.vacante_id === v.id),
   ).length;
   const hayAnalisis = cvsListos > 0 || candidatos.length > 0;
 
