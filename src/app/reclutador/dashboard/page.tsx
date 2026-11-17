@@ -94,10 +94,9 @@ export default async function DashboardPage({ searchParams }: PageProps<"/reclut
       (!vacanteFiltro || c.vacante_id === vacanteFiltro.id),
   );
   const matchesExtra = extras.length;
-  const buenosExtra = extras.filter((c) => Number(c.afinidad) >= AFINIDAD_BUEN_MATCH);
-  const personasExtra = new Set(buenosExtra.map((c) => c.postulante_id)).size;
+  const personasExtra = new Set(extras.map((c) => c.postulante_id)).size;
   const vacantesCubribles = vacantesVisibles.filter(
-    (v) => v.activa && !porVacante.has(v.id) && buenosExtra.some((c) => c.vacante_id === v.id),
+    (v) => v.activa && !porVacante.has(v.id) && extras.some((c) => c.vacante_id === v.id),
   ).length;
   const hayAnalisis = cvsListos > 0 || candidatos.length > 0;
 
@@ -398,7 +397,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/reclut
                 <div>
                   <p className="text-5xl font-bold">{personasExtra}</p>
                   <p className="mt-2 text-sm text-blue-100">
-                    {personasExtra === 1 ? "persona" : "personas"} con buen match en vacantes a las que no se postularon
+                    {personasExtra === 1 ? "persona" : "personas"} que encajan con vacantes a las que no se postularon
                   </p>
                 </div>
                 <div>
@@ -431,7 +430,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/reclut
           <div><dt className="inline font-semibold text-marca">Tiempo hasta 1.ª revisión: </dt><dd className="inline">días promedio entre que llega la postulación y la primera vez que se le cambia la etapa. Solo cuenta las que ya se movieron.</dd></div>
           <div><dt className="inline font-semibold text-marca">Sin revisar: </dt><dd className="inline">postulaciones en etapa Nuevo con {DIAS_SIN_REVISAR} días o más.</dd></div>
           <div><dt className="inline font-semibold text-marca">Proceso estancado: </dt><dd className="inline">candidato en Preseleccionado, En entrevista o Finalista sin cambio de etapa hace {DIAS_ESTANCADA} días o más.</dd></div>
-          <div><dt className="inline font-semibold text-marca">Match extra: </dt><dd className="inline">afinidad de {AFINIDAD_MINIMA_LISTA} o más que la IA calculó para una vacante abierta a la que la persona no se postuló. «Buen match» es {AFINIDAD_BUEN_MATCH} o más.</dd></div>
+          <div><dt className="inline font-semibold text-marca">Match extra: </dt><dd className="inline">afinidad de {AFINIDAD_MINIMA_LISTA} o más que la IA calculó para una vacante abierta a la que la persona no se postuló.</dd></div>
           <div><dt className="inline font-semibold text-marca">Afinidad: </dt><dd className="inline">estimación de la IA basada en los requisitos de la vacante y lo que dice el CV. Es una orientación: la decisión es siempre de una persona.</dd></div>
         </dl>
       </details>
